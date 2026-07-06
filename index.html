@@ -242,8 +242,8 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
 .type-toggle button.active{border-color:var(--ink); background:var(--ink); color:#fff;}
 .tag-row{display:flex; gap:6px; flex-wrap:wrap; margin:5px 0 9px 0;}
 .tag{background:#F1EFFB; color:var(--ink); font-size:10.5px; padding:3px 8px; border-radius:6px; font-weight:500;}
-.summary-row{display:flex; justify-content:space-between; padding:5px 0; font-size:13px;}
-.summary-row.total{font-weight:700; font-size:16px; border-top:1.5px solid var(--ink); margin-top:7px; padding-top:11px;}
+.summary-row{display:flex; justify-content:space-between; padding:8px 0; font-size:13px; color:var(--ink);}
+.summary-row.total{font-weight:700; font-size:17px; border-top:2px solid var(--ink); margin-top:10px; padding-top:12px; color:var(--ink);}
 .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:600;}
 .badge-gold{background:rgba(108,99,255,0.14); color:var(--gold-dark);}
 .badge-slate{background:rgba(102,107,133,0.12); color:var(--slate);}
@@ -263,19 +263,21 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
 }
 .bill-inner{padding:26px 30px;}
 .bill-head{display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid var(--ink); padding-bottom:15px; margin-bottom:17px;}
-.bill-biz-name{font-size:21px; font-weight:700; color:var(--ink); margin:0;}
-.bill-biz-meta{font-size:11.5px; color:var(--slate); margin-top:3px; line-height:1.6;}
+.bill-biz-name{font-size:24px; font-weight:700; color:var(--ink); margin:0; letter-spacing:-0.5px;}
+.bill-biz-meta{font-size:11px; color:var(--slate); margin-top:6px; line-height:1.7;}
 .bill-stamp{
-  width:56px; height:56px; border-radius:50%; border:2px solid var(--gold);
+  width:70px; height:70px; border-radius:50%; border:3px solid var(--gold);
   display:flex; align-items:center; justify-content:center; font-family:'Fraunces',serif;
-  font-size:21px; font-weight:700; color:var(--gold-dark); flex-shrink:0; overflow:hidden;
+  font-size:28px; font-weight:700; color:var(--gold-dark); flex-shrink:0; overflow:hidden; background:var(--ivory);
 }
 .bill-stamp img{width:100%; height:100%; object-fit:cover;}
-.bill-meta-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:17px; font-size:12.5px;}
-.bill-meta-grid .lbl{color:var(--slate); font-size:10.5px; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:2px;}
+.bill-meta-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; font-size:12.5px;}
+.bill-meta-grid .lbl{color:var(--slate); font-size:10px; text-transform:uppercase; letter-spacing:0.6px; margin-bottom:4px; font-weight:600;}
+.bill-meta-grid > div:first-child{border-right:1px solid var(--slate); padding-right:20px;}
 .bill table{box-shadow:none;}
-.bill th{background:var(--ivory);}
-.bill-totals{margin-left:auto; width:270px; margin-top:14px;}
+.bill th{background:var(--ink); color:var(--paper); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px;}
+.bill td{font-size:12.5px; padding:10px 8px;}
+.bill-totals{margin-left:auto; width:280px; margin-top:16px; background:var(--ivory); padding:12px; border-radius:6px;}
 
 @media print{
   .sidebar, .page-header .btn, .no-print{display:none !important;}
@@ -1991,6 +1993,11 @@ function renderInvoiceView(id){
             <div class="summary-row"><span>Advance Received</span><span class="mono">-${dual(inv.advanceReceived, inv.advanceReceivedUSD!==undefined?inv.advanceReceivedUSD:inv.advanceReceived/usdRate)}</span></div>
             <div class="summary-row total"><span>Balance Due</span><span class="mono">${dual(inv.balanceDue!==undefined?inv.balanceDue:inv.total-inv.advanceReceived, inv.balanceDueUSD!==undefined?inv.balanceDueUSD:totalUSD-(inv.advanceReceivedUSD!==undefined?inv.advanceReceivedUSD:inv.advanceReceived/usdRate))}</span></div>
           `:''}
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--slate); font-size: 12px; color: var(--slate);">
+            <div><b>Amount in Words:</b></div>
+            ${showINR ? `<div style="margin-top: 4px;">₹ ${numberToWords(inv.total||0, 'INR')}</div>` : ''}
+            ${showUSD ? `<div style="margin-top: 4px;">$ ${numberToWords(totalUSD||0, 'USD')}</div>` : ''}
+          </div>
         </div>
         ${inv.notes? `<div style="margin-top:24px; font-size:13px; color:var(--slate);"><b>Notes:</b> ${escapeHTML(inv.notes)}</div>`:''}
         ${biz.bankDetails? `<div style="margin-top:16px; font-size:12px; color:var(--slate); white-space:pre-line;"><b>Payment Details:</b>\n${escapeHTML(biz.bankDetails)}</div>`:''}
@@ -2513,6 +2520,45 @@ function copyMessageAndShare(){
     .catch(err=>{
       alert('❌ Copy failed!\n\n' + err.message + '\n\nManually select the message above aur Ctrl+C karo.');
     });
+}
+
+function numberToWords(num, currency='INR'){
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+  const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+  const scales = ['', 'Thousand', 'Lakh', 'Crore'];
+  
+  if(num===0) return currency==='USD' ? 'Zero US Dollars' : 'Zero Rupees';
+  
+  let n = Math.floor(num);
+  let decimals = Math.round((num - n)*100);
+  let words = '';
+  let scaleIdx = 0;
+  
+  function convertGroup(n){
+    if(n===0) return '';
+    if(n<10) return ones[n];
+    if(n<20) return teens[n-10];
+    if(n<100) return tens[Math.floor(n/10)] + (n%10>0 ? ' '+ones[n%10] : '');
+    return ones[Math.floor(n/100)] + ' Hundred' + (n%100>0 ? ' '+convertGroup(n%100) : '');
+  }
+  
+  while(n>0){
+    let group = n%1000;
+    if(group!==0) {
+      words = convertGroup(group) + (scales[scaleIdx]?(' '+scales[scaleIdx]):'')+', '+words;
+    }
+    n = Math.floor(n/1000);
+    scaleIdx++;
+  }
+  
+  words = words.replace(/,\s*$/,'').trim();
+  if(decimals>0) words += ' and '+convertGroup(decimals)+' Paise';
+  
+  if(currency==='USD') words += ' US Dollars';
+  else words += ' Rupees';
+  
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /* ============================= SEARCH ============================= */
