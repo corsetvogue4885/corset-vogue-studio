@@ -499,6 +499,31 @@ function styleTotalCostUSD(s, usdRate){
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 
 const INDIAN_STATES = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Jammu and Kashmir","Ladakh","Puducherry","Chandigarh"];
+
+const USA_STATES = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
+
+const UK_REGIONS = ["England","Scotland","Wales","Northern Ireland"];
+
+const UAE_EMIRATES = ["Abu Dhabi","Ajman","Dubai","Fujairah","Ras Al Khaimah","Sharjah","Umm Al Quwain"];
+
+const AUSTRALIA_STATES = ["New South Wales","Queensland","South Australia","Tasmania","Victoria","Western Australia","Australian Capital Territory","Northern Territory"];
+
+const CANADA_PROVINCES = ["Alberta","British Columbia","Manitoba","New Brunswick","Newfoundland and Labrador","Northwest Territories","Nova Scotia","Nunavut","Ontario","Prince Edward Island","Quebec","Saskatchewan","Yukon"];
+
+const SINGAPORE_REGIONS = ["Central Region","East Region","North Region","Northeast Region","West Region"];
+
+function getStatesByCountry(country){
+  switch(country){
+    case 'India': return INDIAN_STATES;
+    case 'United States': return USA_STATES;
+    case 'United Kingdom': return UK_REGIONS;
+    case 'United Arab Emirates': return UAE_EMIRATES;
+    case 'Australia': return AUSTRALIA_STATES;
+    case 'Canada': return CANADA_PROVINCES;
+    case 'Singapore': return SINGAPORE_REGIONS;
+    default: return [];
+  }
+}
 const SIZE_OPTIONS = ['XS','S','M','L','XL','XXL','Custom','20','22','24','26','28','30','32','34','36','38','40'];
 function sizeOptionsHTML(currentVal){
   const hasCustomVal = currentVal && !SIZE_OPTIONS.includes(currentVal);
@@ -1248,7 +1273,7 @@ function openClientModal(id){
     <div class="field"><label>Website (optional)</label><input type="url" id="f_website" value="${escapeHTML(c.website||'')}" placeholder="https://example.com"></div>
     <div class="field-row">
       <div class="field"><label>Country</label>
-        <input type="text" id="f_country" value="${escapeHTML(c.country||'India')}" placeholder="India" list="countryList">
+        <input type="text" id="f_country" value="${escapeHTML(c.country||'India')}" placeholder="India" list="countryList" onchange="updateStateOptions()">
         <datalist id="countryList">
           <option value="India">
           <option value="United States">
@@ -1260,7 +1285,9 @@ function openClientModal(id){
         </datalist>
       </div>
       <div class="field"><label>State / Region</label>
-        <select id="f_state">${INDIAN_STATES.map(st=>`<option ${st===c.state?'selected':''}>${st}</option>`).join('')}</select>
+        <select id="f_state" onchange="updateStateOptions()">
+          ${getStatesByCountry(c.country||'India').map(st=>`<option ${st===c.state?'selected':''}>${st}</option>`).join('')}
+        </select>
       </div>
     </div>
     <div class="field-row">
@@ -1272,6 +1299,15 @@ function openClientModal(id){
       <button class="btn btn-primary" onclick="saveClient('${id||''}')">Save Client</button>
     </div>
   `);
+}
+function updateStateOptions(){
+  const countryInput = document.getElementById('f_country');
+  const stateSelect = document.getElementById('f_state');
+  if(!countryInput || !stateSelect) return;
+  
+  const country = countryInput.value.trim();
+  const states = getStatesByCountry(country);
+  stateSelect.innerHTML = states.map(st=>`<option>${st}</option>`).join('');
 }
 function saveClient(id){
   const name = document.getElementById('f_name').value.trim();
@@ -2408,6 +2444,11 @@ function shareOrderToWhatsApp(invoiceId){
   msg += `📊 Quantity: ${style.qty}\n`;
   msg += `🧵 Fabric: ${escapeHTML(style.fabric||'--')}\n`;
   if(style.color) msg += `🌸 Color: ${escapeHTML(style.color)}\n`;
+  
+  // Add image URL if available
+  if(style.image) {
+    msg += `\n🖼️ Style Image:\n${style.image}\n`;
+  }
   msg += `\n`;
   
   msg += `*👤 CLIENT INFO*\n`;
