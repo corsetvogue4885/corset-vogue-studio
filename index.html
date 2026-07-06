@@ -2553,10 +2553,14 @@ function numberToWords(num, currency='INR'){
   }
   
   words = words.replace(/,\s*$/,'').trim();
-  if(decimals>0) words += ' and '+convertGroup(decimals)+' Paise';
   
-  if(currency==='USD') words += ' US Dollars';
-  else words += ' Rupees';
+  if(currency==='USD'){
+    words += ' US Dollars';
+    if(decimals>0) words += ' and '+convertGroup(decimals)+' Cents';
+  } else {
+    words += ' Rupees';
+    if(decimals>0) words += ' and '+convertGroup(decimals)+' Paise';
+  }
   
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
