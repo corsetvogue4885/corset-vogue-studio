@@ -1292,7 +1292,7 @@ function openClientModal(id){
         </datalist>
       </div>
       <div class="field"><label>State / Region</label>
-        <select id="f_state" onchange="updateStateOptions()">
+        <select id="f_state">
           ${getStatesByCountry(c.country||'India').map(st=>`<option ${st===c.state?'selected':''}>${st}</option>`).join('')}
         </select>
       </div>
