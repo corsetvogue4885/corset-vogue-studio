@@ -514,8 +514,25 @@ const CANADA_PROVINCES = ["Alberta","British Columbia","Manitoba","New Brunswick
 
 const SINGAPORE_REGIONS = ["Central Region","East Region","North Region","Northeast Region","West Region"];
 
+function normalizeCountryName(input){
+  const c = (input||'').trim().toLowerCase();
+  const map = {
+    'india':'India', 'bharat':'India',
+    'usa':'United States', 'us':'United States', 'u.s.a':'United States', 'u.s.a.':'United States',
+    'u.s':'United States', 'u.s.':'United States', 'united states':'United States',
+    'united states of america':'United States', 'america':'United States',
+    'uk':'United Kingdom', 'u.k':'United Kingdom', 'u.k.':'United Kingdom', 'united kingdom':'United Kingdom',
+    'england':'United Kingdom', 'britain':'United Kingdom', 'great britain':'United Kingdom',
+    'uae':'United Arab Emirates', 'u.a.e':'United Arab Emirates', 'u.a.e.':'United Arab Emirates',
+    'united arab emirates':'United Arab Emirates', 'emirates':'United Arab Emirates', 'dubai':'United Arab Emirates',
+    'australia':'Australia', 'aus':'Australia',
+    'canada':'Canada',
+    'singapore':'Singapore', 'sg':'Singapore'
+  };
+  return map[c] || (input||'').trim();
+}
 function getStatesByCountry(country){
-  switch(country){
+  switch(normalizeCountryName(country)){
     case 'India': return INDIAN_STATES;
     case 'United States': return USA_STATES;
     case 'United Kingdom': return UK_REGIONS;
@@ -548,7 +565,11 @@ const defaultSettings = {
   bankDetails:'',
   logo:'',
   usdRate:83,
-  tailorGroupLink:''
+  tailorGroupLink:'',
+  authorisedSignatory:'',
+  iecNumber:'DEVPS0640C',
+  lutNumber:'',
+  lutDetails:''
 };
 
 /* ============================= IN-MEMORY CACHE (synced from Firestore) ============================= */
@@ -993,6 +1014,7 @@ function viewStyleModal(id){
 }
 function openStyleModal(id){
   const s = id ? DB.styles.find(x=>x.id===id) : {id:null,name:'',description:'',cost:'',costUSD:'',packingCost:'',packingCostUSD:'',shippingCost:'',shippingCostUSD:'',otherCost:'',otherCostUSD:'',image:'',image2:'',imageUrl:'',imageUrl2:'',size:'',fabric:'',hsnCode:'',clientId:''};
+  const currencySelected = (s.costUSD && (!s.cost || Number(s.cost)===0)) ? 'usd' : 'inr';
   showModal(`
     <h2>${id?'Edit':'Add'} Style</h2>
     <div class="field">
@@ -1014,20 +1036,15 @@ function openStyleModal(id){
     <div class="field">
       <label>Currency for Costs</label>
       <select id="f_currency" onchange="document.querySelectorAll('[data-currency]').forEach(el=>el.style.display=this.value===el.dataset.currency?'block':'none');">
-        <option value="inr">₹ INR Only</option>
-        <option value="usd">$ USD Only</option>
-        <option value="both" selected>Both (₹ & $)</option>
+        <option value="inr" ${currencySelected==='inr'?'selected':''}>₹ INR Only</option>
+        <option value="usd" ${currencySelected==='usd'?'selected':''}>$ USD Only</option>
       </select>
     </div>
-    <div class="field-row" data-currency="inr" style="display:none;">
+    <div class="field-row" data-currency="inr" style="display:${currencySelected==='inr'?'block':'none'};">
       <div class="field"><label>Cost (₹)</label><input type="number" id="f_cost" value="${s.cost}" placeholder="2500"></div>
     </div>
-    <div class="field-row" data-currency="usd" style="display:none;">
+    <div class="field-row" data-currency="usd" style="display:${currencySelected==='usd'?'block':'none'};">
       <div class="field"><label>Cost ($)</label><input type="number" id="f_costusd" value="${s.costUSD||''}" placeholder="e.g. 30"></div>
-    </div>
-    <div class="field-row" data-currency="both">
-      <div class="field"><label>Cost (₹)</label><input type="number" id="f_cost" value="${s.cost}" placeholder="2500"></div>
-      <div class="field"><label>Cost ($)</label><input type="number" id="f_costusd" value="${s.costUSD||''}" placeholder="Auto from ₹ if blank"></div>
     </div>
     <div class="field-row">
       <div class="field">
@@ -1039,35 +1056,23 @@ function openStyleModal(id){
         <input type="text" id="f_fabric" value="${escapeHTML(s.fabric||'')}" placeholder="e.g. Silk, Cotton">
       </div>
     </div>
-    <div class="field-row" data-currency="inr" style="display:none;">
+    <div class="field-row" data-currency="inr" style="display:${currencySelected==='inr'?'block':'none'};">
       <div class="field"><label>Packing Cost (₹)</label><input type="number" id="f_packing" value="${s.packingCost||''}" placeholder="0"></div>
     </div>
-    <div class="field-row" data-currency="usd" style="display:none;">
+    <div class="field-row" data-currency="usd" style="display:${currencySelected==='usd'?'block':'none'};">
       <div class="field"><label>Packing Cost ($)</label><input type="number" id="f_packingusd" value="${s.packingCostUSD||''}" placeholder="0"></div>
     </div>
-    <div class="field-row" data-currency="both">
-      <div class="field"><label>Packing Cost (₹)</label><input type="number" id="f_packing" value="${s.packingCost||''}" placeholder="0"></div>
-      <div class="field"><label>Packing Cost ($)</label><input type="number" id="f_packingusd" value="${s.packingCostUSD||''}" placeholder="Auto if blank"></div>
-    </div>
-    <div class="field-row" data-currency="inr" style="display:none;">
+    <div class="field-row" data-currency="inr" style="display:${currencySelected==='inr'?'block':'none'};">
       <div class="field"><label>Shipping Cost (₹)</label><input type="number" id="f_shipping" value="${s.shippingCost||''}" placeholder="0"></div>
     </div>
-    <div class="field-row" data-currency="usd" style="display:none;">
+    <div class="field-row" data-currency="usd" style="display:${currencySelected==='usd'?'block':'none'};">
       <div class="field"><label>Shipping Cost ($)</label><input type="number" id="f_shippingusd" value="${s.shippingCostUSD||''}" placeholder="0"></div>
     </div>
-    <div class="field-row" data-currency="both">
-      <div class="field"><label>Shipping Cost (₹)</label><input type="number" id="f_shipping" value="${s.shippingCost||''}" placeholder="0"></div>
-      <div class="field"><label>Shipping Cost ($)</label><input type="number" id="f_shippingusd" value="${s.shippingCostUSD||''}" placeholder="Auto if blank"></div>
-    </div>
-    <div class="field-row" data-currency="inr" style="display:none;">
+    <div class="field-row" data-currency="inr" style="display:${currencySelected==='inr'?'block':'none'};">
       <div class="field"><label>Other Cost (₹)</label><input type="number" id="f_othercost" value="${s.otherCost||''}" placeholder="0"></div>
     </div>
-    <div class="field-row" data-currency="usd" style="display:none;">
+    <div class="field-row" data-currency="usd" style="display:${currencySelected==='usd'?'block':'none'};">
       <div class="field"><label>Other Cost ($)</label><input type="number" id="f_othercostusd" value="${s.otherCostUSD||''}" placeholder="0"></div>
-    </div>
-    <div class="field-row" data-currency="both">
-      <div class="field"><label>Other Cost (₹)</label><input type="number" id="f_othercost" value="${s.otherCost||''}" placeholder="0"></div>
-      <div class="field"><label>Other Cost ($)</label><input type="number" id="f_othercostusd" value="${s.otherCostUSD||''}" placeholder="Auto if blank"></div>
     </div>
     <div class="field">
       <label>HSN / SAC Code</label>
@@ -1275,7 +1280,7 @@ function openClientModal(id){
     <div class="field"><label>Website (optional)</label><input type="url" id="f_website" value="${escapeHTML(c.website||'')}" placeholder="https://example.com"></div>
     <div class="field-row">
       <div class="field"><label>Country</label>
-        <input type="text" id="f_country" value="${escapeHTML(c.country||'India')}" placeholder="India" list="countryList" onchange="updateStateOptions()">
+        <input type="text" id="f_country" value="${escapeHTML(c.country||'India')}" placeholder="India" list="countryList" oninput="updateStateOptions()" onchange="normalizeCountryField()">
         <datalist id="countryList">
           <option value="India">
           <option value="United States">
@@ -1310,6 +1315,13 @@ function updateStateOptions(){
   const country = countryInput.value.trim();
   const states = getStatesByCountry(country);
   stateSelect.innerHTML = states.map(st=>`<option>${st}</option>`).join('');
+}
+function normalizeCountryField(){
+  const countryInput = document.getElementById('f_country');
+  if(!countryInput) return;
+  const normalized = normalizeCountryName(countryInput.value.trim());
+  if(normalized) countryInput.value = normalized;
+  updateStateOptions();
 }
 function saveClient(id){
   const name = document.getElementById('f_name').value.trim();
@@ -1546,6 +1558,9 @@ function exportInvoicesExcel(){
     'Total (USD)': inv.totalUSD!==undefined ? Number(inv.totalUSD.toFixed(2)) : '',
     'Advance Received (INR)': inv.advanceReceived||0,
     'Balance Due (INR)': inv.balanceDue!==undefined ? inv.balanceDue : (inv.total-(inv.advanceReceived||0)),
+    'E-way Bill No': inv.ewayBillNo||'',
+    'Transporter': inv.transporterName||'',
+    'Vehicle No': inv.vehicleNo||'',
     'Created By': inv.createdBy||''
   }));
   const itemRows = [];
@@ -1601,7 +1616,10 @@ function startNewInvoice(){
     otherCharge: 0,
     otherChargeUSD: 0,
     advanceReceived: 0,
-    advanceReceivedUSD: 0
+    advanceReceivedUSD: 0,
+    ewayBillNo: '',
+    transporterName: '',
+    vehicleNo: ''
   };
   currentPage='newinvoice';
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.page==='newinvoice'));
@@ -1695,6 +1713,28 @@ function renderInvoiceBuilder(){
           <span class="badge ${sameState?'badge-gold':'badge-slate'}">${isExport? '🌍 Export Invoice (Outside India) → IGST' : (sameState? 'Same State → CGST + SGST' : 'Different State → IGST')}</span>
           ${isExport? `<div style="margin-top:6px; font-size:11.5px;">Export ke liye GST treatment (0%/LUT/with tax) apne CA se confirm kar lein.</div>`:''}
         </div>
+
+        <h3>Transport Details (optional)</h3>
+        <div class="field-row" style="margin-bottom:16px;">
+          <div class="field">
+            <label>E-way Bill No.</label>
+            <input type="text" value="${escapeHTML(st.ewayBillNo||'')}" placeholder="e.g. 1234 5678 9012" onchange="newInvoiceState.ewayBillNo=this.value">
+          </div>
+          <div class="field">
+            <label>Vehicle No.</label>
+            <input type="text" value="${escapeHTML(st.vehicleNo||'')}" placeholder="e.g. DL01AB1234" onchange="newInvoiceState.vehicleNo=this.value">
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+          <label>Transporter Name</label>
+          <input type="text" value="${escapeHTML(st.transporterName||'')}" placeholder="e.g. XYZ Logistics" onchange="newInvoiceState.transporterName=this.value">
+        </div>
+        ${isExport? `
+        <h3>Export Details</h3>
+        <div style="font-size:12px; color:var(--slate); margin-bottom:16px; padding:10px; background:var(--ivory); border-radius:6px;">
+          IEC No: <b>${escapeHTML(DB.settings.iecNumber||'-')}</b>${DB.settings.lutNumber? `<br>LUT No: <b>${escapeHTML(DB.settings.lutNumber)}</b>${DB.settings.lutDetails? ' ('+escapeHTML(DB.settings.lutDetails)+')':''}` : `<br><span style="color:var(--danger, #c0392b);">LUT number set nahi hai — Settings mein add karein.</span>`}
+        </div>
+        ` : ''}
 
         <h3>Items</h3>
         <div class="field" style="display:flex; gap:8px; margin-bottom:10px;">
@@ -1859,6 +1899,9 @@ function finalizeInvoice(){
     subtotal, gstAmt, total,
     subtotalUSD, gstAmtUSD, totalUSD,
     balanceDue, balanceDueUSD,
+    ewayBillNo: st.ewayBillNo||'',
+    transporterName: st.transporterName||'',
+    vehicleNo: st.vehicleNo||'',
     notes: st.notes,
     createdBy: currentUser? currentUser.email : '',
     createdAt: Date.now()
@@ -1925,15 +1968,23 @@ function renderInvoiceView(id){
             <div class="bill-biz-meta">
               ${escapeHTML(biz.bizAddress||'')}<br>
               ${biz.bizPhone? 'Ph: '+escapeHTML(biz.bizPhone)+'<br>':''}
-              ${biz.bizGSTIN? 'GSTIN: '+escapeHTML(biz.bizGSTIN):''}
+              ${biz.bizGSTIN? 'GSTIN: '+escapeHTML(biz.bizGSTIN)+'<br>':''}
+              ${inv.isExport && biz.iecNumber? 'IEC: '+escapeHTML(biz.iecNumber):''}
             </div>
           </div>
           <div style="text-align:right;">
             <div class="bill-stamp" style="margin-left:auto;"><img src="${LOGO_DATA_URL}" alt="logo"></div>
-            <div class="badge badge-gold" style="margin-top:8px;">${invoiceType==='service'?'SERVICE INVOICE':'TAX INVOICE (GOODS)'}</div>
-            ${inv.isExport? `<div class="badge badge-slate" style="margin-top:6px;">🌍 EXPORT INVOICE</div>`:''}
+            ${inv.isExport?
+              `<div class="badge badge-slate" style="margin-top:8px;">🌍 EXPORT INVOICE${invoiceType==='service'?' (SERVICES)':' (GOODS)'}</div>`
+              : `<div class="badge badge-gold" style="margin-top:8px;">${invoiceType==='service'?'SERVICE INVOICE':'TAX INVOICE (GOODS)'}</div>`
+            }
           </div>
         </div>
+        ${inv.isExport && (biz.lutNumber || biz.lutDetails)? `
+        <div style="font-size:11.5px; color:var(--slate); margin-bottom:14px; padding:8px 10px; background:var(--ivory); border-radius:6px;">
+          Supply meant for export under LUT without payment of IGST.
+          ${biz.lutNumber? ` LUT No: <b>${escapeHTML(biz.lutNumber)}</b>`:''}${biz.lutDetails? ` (${escapeHTML(biz.lutDetails)})`:''}
+        </div>` : ''}
         <div class="bill-meta-grid">
           <div>
             <div class="lbl">Bill To</div>
@@ -1951,6 +2002,14 @@ function renderInvoiceView(id){
             ${inv.orderNo? `
             <div class="lbl" style="margin-top:8px;">Order No.</div>
             <div class="mono">${escapeHTML(inv.orderNo)}</div>
+            ` : ''}
+            ${inv.ewayBillNo? `
+            <div class="lbl" style="margin-top:8px;">E-way Bill No.</div>
+            <div class="mono">${escapeHTML(inv.ewayBillNo)}</div>
+            ` : ''}
+            ${(inv.transporterName || inv.vehicleNo)? `
+            <div class="lbl" style="margin-top:8px;">Transporter</div>
+            <div class="mono">${escapeHTML(inv.transporterName||'-')}${inv.vehicleNo? ' · '+escapeHTML(inv.vehicleNo):''}</div>
             ` : ''}
           </div>
         </div>
@@ -2001,6 +2060,15 @@ function renderInvoiceView(id){
         </div>
         ${inv.notes? `<div style="margin-top:24px; font-size:13px; color:var(--slate);"><b>Notes:</b> ${escapeHTML(inv.notes)}</div>`:''}
         ${biz.bankDetails? `<div style="margin-top:16px; font-size:12px; color:var(--slate); white-space:pre-line;"><b>Payment Details:</b>\n${escapeHTML(biz.bankDetails)}</div>`:''}
+        <div style="margin-top:40px; display:flex; justify-content:flex-end;">
+          <div style="text-align:center; font-size:12px; color:var(--slate);">
+            <div style="margin-bottom:4px;">For ${escapeHTML(biz.bizName)}</div>
+            <div style="height:36px;"></div>
+            <div style="border-top:1px solid var(--slate); padding-top:6px; min-width:180px;">
+              Authorised Signatory${biz.authorisedSignatory? `<br>${escapeHTML(biz.authorisedSignatory)}` : ''}
+            </div>
+          </div>
+        </div>
         <div style="margin-top:30px; text-align:center; font-size:11px; color:var(--slate);">Thank you for your business</div>
       </div>
     </div>
@@ -2700,6 +2768,12 @@ function renderSettings(){
       <div class="field"><label>Tailor WhatsApp Group Link (for notifications)</label><input type="url" id="s_tailorgroup" value="${escapeHTML(s.tailorGroupLink||'')}" placeholder="https://chat.whatsapp.com/..."></div>
       <div class="field"><label>Next Invoice Number</label><input type="number" id="s_nextno" value="${s.nextInvoiceNo}"></div>
       <div class="field"><label>Bank Details (optional, shown on invoice)</label><textarea id="s_bank" placeholder="A/c No, IFSC, UPI ID...">${escapeHTML(s.bankDetails)}</textarea></div>
+      <div class="field"><label>Authorised Signatory Name (shown on invoice signature)</label><input type="text" id="s_signatory" value="${escapeHTML(s.authorisedSignatory||'')}" placeholder="e.g. Priya Sharma"></div>
+      <div class="field"><label>IEC Number (shown on export invoices)</label><input type="text" id="s_iec" value="${escapeHTML(s.iecNumber||'')}" placeholder="e.g. DEVPS0640C"></div>
+      <div class="field-row">
+        <div class="field"><label>LUT Number (shown on export invoices)</label><input type="text" id="s_lutno" value="${escapeHTML(s.lutNumber||'')}" placeholder="e.g. AD0708230012345"></div>
+        <div class="field"><label>LUT Validity / Details</label><input type="text" id="s_lutdetails" value="${escapeHTML(s.lutDetails||'')}" placeholder="e.g. Valid FY 2025-26"></div>
+      </div>
       <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
     </div>
     <div class="panel" style="max-width:600px; margin-bottom:20px;">
@@ -2785,7 +2859,11 @@ function saveSettings(){
     usdRate: parseFloat(document.getElementById('s_usdrate').value)||83,
     tailorGroupLink: document.getElementById('s_tailorgroup').value.trim(),
     nextInvoiceNo: parseInt(document.getElementById('s_nextno').value)||1,
-    bankDetails: document.getElementById('s_bank').value.trim()
+    bankDetails: document.getElementById('s_bank').value.trim(),
+    authorisedSignatory: document.getElementById('s_signatory').value.trim(),
+    iecNumber: document.getElementById('s_iec').value.trim(),
+    lutNumber: document.getElementById('s_lutno').value.trim(),
+    lutDetails: document.getElementById('s_lutdetails').value.trim()
   };
   db.collection('meta').doc('settings').set(data, {merge:true})
     .then(()=>alert('Settings saved!'))
