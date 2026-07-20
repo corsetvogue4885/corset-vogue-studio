@@ -1420,8 +1420,14 @@ function duplicateInvoice(invId){
   const inv = DB.invoices.find(i=>i.id===invId);
   if(!inv) return;
   newInvoiceState = {
+    editId: null,
+    number: `${DB.settings.invoicePrefix}-${String(DB.settings.nextInvoiceNo).padStart(4,'0')}`,
     clientId: inv.clientId,
     date: todayStr(),
+    orderNo: '',
+    orderType: inv.orderType||'regular',
+    assignedTailorId: '',
+    status: 'pending',
     items: JSON.parse(JSON.stringify(inv.items)),
     gstRate: inv.gstRate,
     notes: inv.notes||'',
@@ -1429,10 +1435,17 @@ function duplicateInvoice(invId){
     currencyMode: inv.currencyMode||'INR',
     usdRate: inv.usdRate||DB.settings.usdRate,
     discount: inv.discount||0,
+    discountUSD: inv.discountUSD||0,
     shippingCharge: inv.shippingCharge||0,
+    shippingChargeUSD: inv.shippingChargeUSD||0,
     otherChargeLabel: inv.otherChargeLabel||'Other',
     otherCharge: inv.otherCharge||0,
-    advanceReceived: 0
+    otherChargeUSD: inv.otherChargeUSD||0,
+    advanceReceived: 0,
+    advanceReceivedUSD: 0,
+    ewayBillNo: '',
+    transporterName: '',
+    vehicleNo: ''
   };
   currentPage='newinvoice';
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.page==='newinvoice'));
@@ -1518,18 +1531,31 @@ function renderInvoiceList(){
   `;
 }
 function renderInvoiceTable(items, compact){
+  const selectedCount = items.filter(i=>mergeSelection.has(i.id)).length;
+  const allSelected = items.length>0 && selectedCount===items.length;
   return `
+    ${mergeSelection.size>0? `
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
+      <span style="font-size:12.5px; color:var(--slate);"><b>${mergeSelection.size}</b> invoice(s) selected</span>
+      ${mergeSelection.size>=2? `<button class="btn btn-primary btn-sm" onclick="mergeSelectedInvoices()">🔗 Merge into One Invoice</button>` : `<span style="font-size:11.5px; color:var(--slate);">Merge ke liye kam se kam 2 invoices chunein</span>`}
+      <button class="btn btn-ghost btn-sm" onclick="clearMergeSelection()">Clear Selection</button>
+    </div>` : ''}
     <table>
-      <thead><tr><th>Invoice #</th><th>Date</th><th>Client</th><th>Total</th><th></th></tr></thead>
+      <thead><tr>
+        <th style="width:32px;"><input type="checkbox" ${allSelected?'checked':''} onchange="toggleSelectAllInvoices(this.checked, ${JSON.stringify(items.map(i=>i.id))})"></th>
+        <th>Invoice #</th><th>Date</th><th>Client</th><th>Total</th><th></th>
+      </tr></thead>
       <tbody>
         ${items.map(i=>`
           <tr>
+            <td><input type="checkbox" ${mergeSelection.has(i.id)?'checked':''} onchange="toggleMergeSelect('${i.id}', this.checked)"></td>
             <td class="mono">${escapeHTML(i.number)}</td>
             <td>${i.date}</td>
             <td>${escapeHTML(i.clientName)}</td>
             <td class="mono">${fmtINR(i.total)}</td>
             <td>
               <button class="btn btn-ghost btn-sm" onclick="viewInvoice('${i.id}')">View</button>
+              <button class="btn btn-ghost btn-sm" onclick="editInvoice('${i.id}')">✎ Edit</button>
               <button class="btn btn-ghost btn-sm" onclick="shareOrderToWhatsApp('${i.id}')">📤</button>
               <button class="btn btn-ghost btn-sm" onclick="duplicateInvoice('${i.id}')">⧉</button>
               ${!compact?`<button class="btn btn-danger btn-sm" onclick="deleteInvoice('${i.id}')">Delete</button>`:''}
@@ -1539,6 +1565,66 @@ function renderInvoiceTable(items, compact){
       </tbody>
     </table>
   `;
+}
+let mergeSelection = new Set();
+function toggleMergeSelect(id, checked){
+  if(checked) mergeSelection.add(id); else mergeSelection.delete(id);
+  render();
+}
+function toggleSelectAllInvoices(checked, ids){
+  ids.forEach(id=> checked? mergeSelection.add(id) : mergeSelection.delete(id));
+  render();
+}
+function clearMergeSelection(){ mergeSelection.clear(); render(); }
+function mergeSelectedInvoices(){
+  if(mergeSelection.size<2){ alert('Merge karne ke liye kam se kam 2 invoices select karein.'); return; }
+  const invs = [...mergeSelection].map(id=>DB.invoices.find(i=>i.id===id)).filter(Boolean)
+    .sort((a,b)=>a.createdAt-b.createdAt);
+  if(invs.length<2){ alert('Selected invoices nahi mile.'); return; }
+  const clientIds = new Set(invs.map(i=>i.clientId));
+  if(clientIds.size>1){
+    alert('Sirf ek hi client ke invoices ko ek saath merge kar sakte hain. Please sirf usi client ke invoices select karein.');
+    return;
+  }
+  const first = invs[0];
+  const combinedItems = [];
+  invs.forEach(inv=>{ (inv.items||[]).forEach(it=> combinedItems.push({...it})); });
+  const sumField = f => invs.reduce((s,inv)=>s+(Number(inv[f])||0),0);
+  const orderNos = invs.map(i=>i.orderNo).filter(Boolean).join(', ');
+  const sourceNumbers = invs.map(i=>i.number).join(', ');
+  const oldNotes = invs.map(i=>i.notes).filter(Boolean).join(' | ');
+  newInvoiceState = {
+    editId: null,
+    number: `${DB.settings.invoicePrefix}-${String(DB.settings.nextInvoiceNo).padStart(4,'0')}`,
+    clientId: first.clientId,
+    date: todayStr(),
+    orderNo: orderNos,
+    orderType: 'regular',
+    assignedTailorId: '',
+    status: 'pending',
+    items: combinedItems,
+    gstRate: first.gstRate || DB.settings.gstRate,
+    notes: `Merged from invoices: ${sourceNumbers}${oldNotes? ' | '+oldNotes : ''}`,
+    invoiceType: first.invoiceType || 'goods',
+    currencyMode: first.currencyMode || 'INR',
+    usdRate: first.usdRate || DB.settings.usdRate,
+    discount: sumField('discount'),
+    discountUSD: sumField('discountUSD'),
+    shippingCharge: sumField('shippingCharge'),
+    shippingChargeUSD: sumField('shippingChargeUSD'),
+    otherCharge: sumField('otherCharge'),
+    otherChargeUSD: sumField('otherChargeUSD'),
+    advanceReceived: sumField('advanceReceived'),
+    advanceReceivedUSD: sumField('advanceReceivedUSD'),
+    ewayBillNo: '',
+    transporterName: '',
+    vehicleNo: '',
+    mergedFrom: invs.map(i=>({id:i.id, number:i.number}))
+  };
+  mergeSelection.clear();
+  currentPage='newinvoice';
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.page==='newinvoice'));
+  render();
 }
 function exportInvoicesExcel(){
   const summaryRows = DB.invoices.map(inv=>({
@@ -1597,6 +1683,8 @@ function viewInvoice(id){
 /* ============================= NEW INVOICE BUILDER ============================= */
 function startNewInvoice(){
   newInvoiceState = {
+    editId: null,
+    number: `${DB.settings.invoicePrefix}-${String(DB.settings.nextInvoiceNo).padStart(4,'0')}`,
     clientId: DB.clients[0]? DB.clients[0].id : '',
     date: todayStr(),
     orderNo: '',
@@ -1663,10 +1751,14 @@ function renderInvoiceBuilder(){
   return `
     <div class="page-header">
       <div>
-        <h1 class="page-title">New Invoice</h1>
-        <p class="page-sub">Client chunein, styles add karein, GST auto-calculate hoga</p>
+        <h1 class="page-title">${st.editId? 'Edit Invoice' : 'New Invoice'}</h1>
+        <p class="page-sub">${st.editId? 'Invoice details update karein — save karte hi purana version overwrite ho jayega' : 'Client chunein, styles add karein, GST auto-calculate hoga'}</p>
       </div>
     </div>
+    ${st.mergedFrom? `
+    <div style="font-size:12.5px; color:var(--slate); margin-bottom:16px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
+      🔗 Ye invoice merge se bana hai: <b>${st.mergedFrom.map(m=>escapeHTML(m.number)).join(', ')}</b>. Original invoices unchanged hain, sirf ye naya combined invoice save hoga jab aap "Generate Invoice" click karenge.
+    </div>` : ''}
     <div class="inv-layout">
       <div class="panel">
         <h3>Invoice Type</h3>
@@ -1688,9 +1780,15 @@ function renderInvoiceBuilder(){
             <input type="date" value="${st.date}" onchange="newInvoiceState.date=this.value">
           </div>
         </div>
-        <div class="field" style="margin-bottom:16px;">
-          <label>Order No. (client's PO/reference)</label>
-          <input type="text" value="${escapeHTML(st.orderNo||'')}" placeholder="${st.orderType==='regular'?'Required':'Optional'}" onchange="newInvoiceState.orderNo=this.value" ${st.orderType==='regular'?'':'style="opacity:0.7;"'}>
+        <div class="field-row" style="margin-bottom:16px;">
+          <div class="field">
+            <label>Invoice Number</label>
+            <input type="text" class="mono" value="${escapeHTML(st.number||'')}" placeholder="e.g. INV-0001" onchange="newInvoiceState.number=this.value">
+          </div>
+          <div class="field">
+            <label>Order No. (client's PO/reference)</label>
+            <input type="text" value="${escapeHTML(st.orderNo||'')}" placeholder="${st.orderType==='regular'?'Required':'Optional'}" onchange="newInvoiceState.orderNo=this.value" ${st.orderType==='regular'?'':'style="opacity:0.7;"'}>
+          </div>
         </div>
         <div class="field-row" style="margin-bottom:16px;">
           <div class="field">
@@ -1815,8 +1913,8 @@ function renderInvoiceBuilder(){
           <div class="summary-row"><span>Advance Received</span><span class="mono">-${showINR?fmtINR(advanceReceived):''}${showUSD?'$'+fmtUSD(advanceReceivedUSD):''}</span></div>
           <div class="summary-row total"><span>Balance Due</span><span class="mono">${showINR?fmtINR(balanceDue):''}${showUSD?'$'+fmtUSD(balanceDueUSD):''}</span></div>
         `:''}
-        <button class="btn btn-primary" style="width:100%; margin-top:18px;" onclick="finalizeInvoice()">Generate Invoice</button>
-        <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="navigate('invoices')">Cancel</button>
+        <button class="btn btn-primary" style="width:100%; margin-top:18px;" onclick="finalizeInvoice()">${st.editId? 'Update Invoice' : 'Generate Invoice'}</button>
+        <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="${st.editId? `window._viewingInvoiceId='${st.editId}'; newInvoiceState=null; navigate('viewinvoice');` : `newInvoiceState=null; navigate('invoices');`}">Cancel</button>
       </div>
     </div>
   `;
@@ -1846,6 +1944,43 @@ function addManualInvoiceItem(){
 function updateItemField(idx, field, val){ newInvoiceState.items[idx][field] = val; render(); }
 function removeInvoiceItem(idx){ newInvoiceState.items.splice(idx,1); render(); }
 
+function editInvoice(id){
+  const inv = DB.invoices.find(i=>i.id===id);
+  if(!inv){ alert('Invoice nahi mila.'); return; }
+  newInvoiceState = {
+    editId: inv.id,
+    number: inv.number || '',
+    clientId: inv.clientId,
+    date: inv.date,
+    orderNo: inv.orderNo || '',
+    orderType: inv.orderType || 'regular',
+    assignedTailorId: inv.assignedTailorId || '',
+    status: inv.status || 'pending',
+    items: JSON.parse(JSON.stringify(inv.items||[])),
+    gstRate: inv.gstRate || DB.settings.gstRate,
+    notes: inv.notes || '',
+    invoiceType: inv.invoiceType || 'goods',
+    currencyMode: inv.currencyMode || 'INR',
+    usdRate: inv.usdRate || DB.settings.usdRate,
+    discount: inv.discount || 0,
+    discountUSD: inv.discountUSD || 0,
+    shippingCharge: inv.shippingCharge || 0,
+    shippingChargeUSD: inv.shippingChargeUSD || 0,
+    otherCharge: inv.otherCharge || 0,
+    otherChargeUSD: inv.otherChargeUSD || 0,
+    advanceReceived: inv.advanceReceived || 0,
+    advanceReceivedUSD: inv.advanceReceivedUSD || 0,
+    ewayBillNo: inv.ewayBillNo || '',
+    transporterName: inv.transporterName || '',
+    vehicleNo: inv.vehicleNo || '',
+    createdAt: inv.createdAt,
+    createdBy: inv.createdBy || ''
+  };
+  currentPage = 'newinvoice';
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.page==='newinvoice'));
+  render();
+}
+
 function finalizeInvoice(){
   const st = newInvoiceState;
   if(!st.items.length){ alert('Kam se kam ek item add karein'); return; }
@@ -1871,7 +2006,9 @@ function finalizeInvoice(){
   const totalUSD = subtotalUSD + gstAmtUSD;
   const balanceDue = total - advanceReceived;
   const balanceDueUSD = totalUSD - advanceReceivedUSD;
-  const number = `${DB.settings.invoicePrefix}-${String(DB.settings.nextInvoiceNo).padStart(4,'0')}`;
+  const isEdit = !!st.editId;
+  const number = (st.number && st.number.trim()) ? st.number.trim() : `${DB.settings.invoicePrefix}-${String(DB.settings.nextInvoiceNo).padStart(4,'0')}`;
+  if(!number){ alert('Invoice number dalna zaroori hai'); return; }
   const invoiceData = {
     number,
     date: st.date,
@@ -1903,18 +2040,33 @@ function finalizeInvoice(){
     transporterName: st.transporterName||'',
     vehicleNo: st.vehicleNo||'',
     notes: st.notes,
-    createdBy: currentUser? currentUser.email : '',
-    createdAt: Date.now()
+    createdBy: isEdit ? (st.createdBy||'') : (currentUser? currentUser.email : ''),
+    createdAt: isEdit ? (st.createdAt||Date.now()) : Date.now(),
+    updatedBy: currentUser? currentUser.email : '',
+    updatedAt: Date.now(),
+    ...(st.mergedFrom? {mergedFrom: st.mergedFrom} : {})
   };
-  const ref = db.collection('invoices').doc();
-  ref.set(invoiceData)
-    .then(()=>db.collection('meta').doc('settings').set({nextInvoiceNo: DB.settings.nextInvoiceNo+1}, {merge:true}))
-    .then(()=>{
-      newInvoiceState = null;
-      window._viewingInvoiceId = ref.id;
-      navigate('viewinvoice');
-    })
-    .catch(err=>alert('Invoice save fail: '+err.message));
+
+  if(isEdit){
+    // Edit mode: sirf isi invoice ka data update hota hai (merge:true), baaki purana data (dusre invoices, clients, styles) bilkul touch nahi hota.
+    db.collection('invoices').doc(st.editId).set(invoiceData, {merge:true})
+      .then(()=>{
+        newInvoiceState = null;
+        window._viewingInvoiceId = st.editId;
+        navigate('viewinvoice');
+      })
+      .catch(err=>alert('Invoice update fail: '+err.message));
+  } else {
+    const ref = db.collection('invoices').doc();
+    ref.set(invoiceData)
+      .then(()=>db.collection('meta').doc('settings').set({nextInvoiceNo: DB.settings.nextInvoiceNo+1}, {merge:true}))
+      .then(()=>{
+        newInvoiceState = null;
+        window._viewingInvoiceId = ref.id;
+        navigate('viewinvoice');
+      })
+      .catch(err=>alert('Invoice save fail: '+err.message));
+  }
 }
 
 /* ============================= INVOICE VIEW / PRINT ============================= */
@@ -1952,6 +2104,7 @@ function renderInvoiceView(id){
       </div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <button class="btn btn-ghost" onclick="navigate('invoices')">← Back</button>
+        <button class="btn btn-ghost" onclick="editInvoice('${inv.id}')">✎ Edit Invoice</button>
         <button class="btn btn-ghost" onclick="duplicateInvoice('${inv.id}')">⧉ Duplicate</button>
         ${inv.assignedTailorId? `<button class="btn btn-ghost" onclick="sendToTailor('${inv.id}')">✂️ Send to Tailor</button>` : ''}
         <button class="btn btn-ghost" onclick="shareOrderToWhatsApp('${inv.id}')">📤 Share WhatsApp</button>
@@ -1959,6 +2112,10 @@ function renderInvoiceView(id){
         <button class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
       </div>
     </div>
+    ${inv.mergedFrom && inv.mergedFrom.length? `
+    <div class="no-print" style="font-size:12.5px; color:var(--slate); margin-bottom:16px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
+      🔗 Ye combined invoice hai, inse merge karke bana hai: ${inv.mergedFrom.map(m=>`<a href="javascript:void(0)" onclick="viewInvoice('${m.id}')" style="color:var(--gold); text-decoration:underline;">${escapeHTML(m.number)}</a>`).join(', ')}
+    </div>` : ''}
     <div class="bill">
       <div class="bill-torn"></div>
       <div class="bill-inner">
