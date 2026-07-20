@@ -416,6 +416,7 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
     <div class="nav-item active" data-page="dashboard"><span class="nav-icon">&#9670;</span> Dashboard</div>
     <div class="nav-item" data-page="styles"><span class="nav-icon">&#10022;</span> Styles</div>
     <div class="nav-item" data-page="clients"><span class="nav-icon">&#9786;</span> Clients</div>
+    <div class="nav-item" data-page="orders"><span class="nav-icon">&#128230;</span> Orders</div>
     <div class="nav-item" data-page="invoices"><span class="nav-icon">&#9636;</span> Invoices</div>
     <div class="nav-item" data-page="challans"><span class="nav-icon">&#128666;</span> Challans</div>
     <div class="nav-item" data-page="newchallan"><span class="nav-icon">&#9998;</span> New Challan</div>
@@ -578,6 +579,7 @@ let DB = {
   styles: [],
   clients: [],
   invoices: [],
+  orders: [],
   tailors: [],
   challans: [],
   vendors: []
@@ -587,10 +589,10 @@ let currentUserRole = 'admin'; // 'admin' or 'tailor'
 let currentTailorId = null;
 let listenersActive = false;
 let unsubscribers = [];
-let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, tailors:false, challans:false, vendors:false };
+let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false };
 
 function allLoaded(){
-  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors;
+  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors;
 }
 
 function attachListeners(){
@@ -621,6 +623,12 @@ function attachListeners(){
     loadedFlags.invoices = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.invoices = true; afterSync(); }));
+
+  unsubscribers.push(db.collection('orders').onSnapshot(snap=>{
+    DB.orders = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    loadedFlags.orders = true;
+    afterSync();
+  }, err=>{ console.error(err); loadedFlags.orders = true; afterSync(); }));
 
   unsubscribers.push(db.collection('tailors').onSnapshot(snap=>{
     DB.tailors = snap.docs.map(d=>({id:d.id, ...d.data()}));
@@ -812,6 +820,8 @@ function render(){
   else if(currentPage==='clients') main.innerHTML = renderClients();
   else if(currentPage==='clientdetail') main.innerHTML = renderClientDetail(window._viewingClientId);
   else if(currentPage==='invoices') main.innerHTML = renderInvoiceList();
+  else if(currentPage==='orders') main.innerHTML = renderOrdersList();
+  else if(currentPage==='neworder') main.innerHTML = renderOrderBuilder();
   else if(currentPage==='newinvoice') main.innerHTML = renderInvoiceBuilder();
   else if(currentPage==='viewinvoice') main.innerHTML = renderInvoiceView(window._viewingInvoiceId);
   else if(currentPage==='challans') main.innerHTML = renderChallanList();
@@ -1514,8 +1524,22 @@ function renderClientDetail(id){
 }
 
 /* ============================= INVOICE LIST ============================= */
+let invoiceListFilters = { month: '', clientId: '' };
+function monthKey(dateStr){ return dateStr ? String(dateStr).slice(0,7) : ''; }
+function monthLabel(key){
+  if(!key) return '';
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const [y,m] = key.split('-');
+  return `${months[parseInt(m,10)-1]} ${y}`;
+}
+function setInvoiceListFilter(field, val){ invoiceListFilters[field] = val; render(); }
 function renderInvoiceList(){
-  const items = [...DB.invoices].sort((a,b)=>b.createdAt-a.createdAt);
+  const allSorted = [...DB.invoices].sort((a,b)=>b.createdAt-a.createdAt);
+  const monthKeys = [...new Set(DB.invoices.map(i=>monthKey(i.date)).filter(Boolean))].sort().reverse();
+  const items = allSorted.filter(i=>
+    (!invoiceListFilters.month || monthKey(i.date)===invoiceListFilters.month) &&
+    (!invoiceListFilters.clientId || i.clientId===invoiceListFilters.clientId)
+  );
   return `
     <div class="page-header">
       <div>
@@ -1523,12 +1547,43 @@ function renderInvoiceList(){
         <p class="page-sub">Sab GST invoices ek jagah</p>
       </div>
       <div style="display:flex; gap:10px;">
-        ${items.length? `<button class="btn btn-ghost" onclick="exportInvoicesExcel()">⬇ Export to Excel</button>`:''}
+        ${allSorted.length? `<button class="btn btn-ghost" onclick="exportInvoicesExcel()">⬇ Export to Excel</button>`:''}
         <button class="btn btn-primary" onclick="startNewInvoice()">+ New Invoice</button>
       </div>
     </div>
-    ${items.length? renderInvoiceTable(items,false) : `<div class="empty-state"><div class="big">▤</div>Koi invoice nahi bana. "New Invoice" se shuru karein.</div>`}
+    ${allSorted.length? `
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; padding:12px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
+      <div class="field" style="margin:0;">
+        <label>Month se filter karein</label>
+        <select onchange="setInvoiceListFilter('month', this.value)">
+          <option value="">-- Sab Months --</option>
+          ${monthKeys.map(k=>`<option value="${k}" ${invoiceListFilters.month===k?'selected':''}>${monthLabel(k)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Client se filter karein</label>
+        <select onchange="setInvoiceListFilter('clientId', this.value)">
+          <option value="">-- Sab Clients --</option>
+          ${DB.clients.map(c=>`<option value="${c.id}" ${invoiceListFilters.clientId===c.id?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}
+        </select>
+      </div>
+      ${invoiceListFilters.month? `
+      <button class="btn btn-primary btn-sm" onclick="mergeMonthInvoices()">📅 Is Month Ka Ek Invoice Banao (${items.length})</button>
+      ` : ''}
+      ${(invoiceListFilters.month || invoiceListFilters.clientId)? `<button class="btn btn-ghost btn-sm" onclick="invoiceListFilters={month:'',clientId:''}; render();">Filter Clear Karein</button>` : ''}
+    </div>` : ''}
+    ${items.length? renderInvoiceTable(items,false) : `<div class="empty-state"><div class="big">▤</div>${allSorted.length? 'Is filter mein koi invoice nahi mila.' : 'Koi invoice nahi bana. "New Invoice" se shuru karein.'}</div>`}
   `;
+}
+function mergeMonthInvoices(){
+  if(!invoiceListFilters.month){ alert('Pehle ek month select karein.'); return; }
+  const filtered = DB.invoices.filter(i=>
+    monthKey(i.date)===invoiceListFilters.month &&
+    (!invoiceListFilters.clientId || i.clientId===invoiceListFilters.clientId)
+  );
+  if(filtered.length<2){ alert('Is selection mein merge ke liye kam se kam 2 invoices hone chahiye. Agar alag-alag clients ke invoices hain, toh pehle Client filter bhi laga lein.'); return; }
+  mergeSelection = new Set(filtered.map(i=>i.id));
+  mergeSelectedInvoices();
 }
 function renderInvoiceTable(items, compact){
   const selectedCount = items.filter(i=>mergeSelection.has(i.id)).length;
@@ -1758,6 +1813,10 @@ function renderInvoiceBuilder(){
     ${st.mergedFrom? `
     <div style="font-size:12.5px; color:var(--slate); margin-bottom:16px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
       🔗 Ye invoice merge se bana hai: <b>${st.mergedFrom.map(m=>escapeHTML(m.number)).join(', ')}</b>. Original invoices unchanged hain, sirf ye naya combined invoice save hoga jab aap "Generate Invoice" click karenge.
+    </div>` : ''}
+    ${st.sourceOrderIds? `
+    <div style="font-size:12.5px; color:var(--slate); margin-bottom:16px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
+      🧾 Ye invoice <b>${st.sourceOrderIds.length} orders</b> ko combine karke bana hai. "Generate Invoice" click karte hi ye sab orders automatically "Invoiced" mark ho jayenge (orders delete nahi honge, sirf status update hoga).
     </div>` : ''}
     <div class="inv-layout">
       <div class="panel">
@@ -2044,7 +2103,8 @@ function finalizeInvoice(){
     createdAt: isEdit ? (st.createdAt||Date.now()) : Date.now(),
     updatedBy: currentUser? currentUser.email : '',
     updatedAt: Date.now(),
-    ...(st.mergedFrom? {mergedFrom: st.mergedFrom} : {})
+    ...(st.mergedFrom? {mergedFrom: st.mergedFrom} : {}),
+    ...(st.sourceOrderIds? {sourceOrderIds: st.sourceOrderIds} : {})
   };
 
   if(isEdit){
@@ -2061,12 +2121,382 @@ function finalizeInvoice(){
     ref.set(invoiceData)
       .then(()=>db.collection('meta').doc('settings').set({nextInvoiceNo: DB.settings.nextInvoiceNo+1}, {merge:true}))
       .then(()=>{
+        // Agar ye invoice orders se bana hai, toh un orders ko "invoiced" mark kar dein (delete nahi karte, sirf status + invoiceId update).
+        if(st.sourceOrderIds && st.sourceOrderIds.length){
+          const batch = db.batch();
+          st.sourceOrderIds.forEach(oid=>{
+            batch.set(db.collection('orders').doc(oid), {status:'invoiced', invoiceId: ref.id}, {merge:true});
+          });
+          return batch.commit();
+        }
+      })
+      .then(()=>{
         newInvoiceState = null;
         window._viewingInvoiceId = ref.id;
         navigate('viewinvoice');
       })
       .catch(err=>alert('Invoice save fail: '+err.message));
   }
+}
+
+/* ============================= ORDERS (order tracking before invoicing) ============================= */
+let newOrderState = null;
+function startNewOrder(){
+  newOrderState = {
+    editId: null,
+    clientId: DB.clients[0] ? DB.clients[0].id : '',
+    date: todayStr(),
+    orderNo: '',
+    orderType: 'regular',
+    status: 'pending',
+    items: [],
+    trackingNo: '',
+    courier: '',
+    weight: '',
+    shippingCharge: 0,
+    otherCharge: 0,
+    notes: ''
+  };
+  currentPage = 'neworder';
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.page==='orders'));
+  render();
+}
+function renderOrderBuilder(){
+  if(!newOrderState) startNewOrder();
+  const st = newOrderState;
+  if(!DB.clients.length){
+    return `<div class="page-header"><h1 class="page-title">New Order</h1></div>
+      <div class="empty-state"><div class="big">☺</div>Pehle ek client add karein.
+        <div style="margin-top:14px;"><button class="btn btn-primary" onclick="navigate('clients')">Go to Clients</button></div>
+      </div>`;
+  }
+  const itemsSubtotal = st.items.reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.rate)||0),0);
+  const shippingCharge = Number(st.shippingCharge)||0;
+  const otherCharge = Number(st.otherCharge)||0;
+  const total = itemsSubtotal + shippingCharge + otherCharge;
+
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">${st.editId? 'Edit Order' : 'New Order'}</h1>
+        <p class="page-sub">Order details save karein — baad mein isko ek ya multiple orders ke saath invoice mein convert kar sakte hain</p>
+      </div>
+    </div>
+    <div class="inv-layout">
+      <div class="panel">
+        <h3>Order Details</h3>
+        <div class="field-row" style="margin-bottom:16px;">
+          <div class="field">
+            <label>Client</label>
+            <select onchange="newOrderState.clientId=this.value; render();">
+              ${DB.clients.map(c=>`<option value="${c.id}" ${c.id===st.clientId?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>Order Date</label>
+            <input type="date" value="${st.date}" onchange="newOrderState.date=this.value">
+          </div>
+        </div>
+        <div class="field-row" style="margin-bottom:16px;">
+          <div class="field">
+            <label>Order No.</label>
+            <input type="text" value="${escapeHTML(st.orderNo||'')}" placeholder="e.g. 11078" onchange="newOrderState.orderNo=this.value">
+          </div>
+          <div class="field">
+            <label>Order Type</label>
+            <select onchange="newOrderState.orderType=this.value; render();">
+              <option value="regular" ${st.orderType==='regular'?'selected':''}>Regular Order</option>
+              <option value="promotional" ${st.orderType==='promotional'?'selected':''}>Promotional</option>
+              <option value="gift" ${st.orderType==='gift'?'selected':''}>Gift</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row" style="margin-bottom:16px;">
+          <div class="field">
+            <label>Tracking No.</label>
+            <input type="text" value="${escapeHTML(st.trackingNo||'')}" placeholder="e.g. 1Z3R22440498445832" onchange="newOrderState.trackingNo=this.value">
+          </div>
+          <div class="field">
+            <label>Courier</label>
+            <input type="text" value="${escapeHTML(st.courier||'')}" placeholder="e.g. UPS, DHL, DPD" onchange="newOrderState.courier=this.value">
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:16px;">
+          <label>Weight</label>
+          <input type="text" value="${escapeHTML(st.weight||'')}" placeholder="e.g. 2.5 kg" onchange="newOrderState.weight=this.value">
+        </div>
+
+        <h3>Items</h3>
+        <div class="field" style="display:flex; gap:8px; margin-bottom:10px;">
+          <select id="orderStylePicker" style="flex:1;">
+            <option value="">-- Select a style to add --</option>
+            ${DB.styles.filter(s=>!s.clientId || s.clientId===st.clientId).map(s=>`<option value="${s.id}">${escapeHTML(s.name)} (${fmtINR(styleTotalCost(s))})</option>`).join('')}
+          </select>
+          <button class="btn btn-ghost" onclick="addOrderItem()">Add</button>
+          <button class="btn btn-ghost" onclick="addManualOrderItem()">+ Manual Entry</button>
+        </div>
+        <div id="orderLineItems">
+          ${st.items.length? st.items.map((it,idx)=>`
+            <div class="line-item">
+              <div class="line-item-top">
+                <input type="text" class="line-item-name" style="font-weight:700; font-size:14px; border:1px solid #E9D5FF; background:#F3E8FF; padding:6px 8px; border-radius:6px; flex:1; margin-right:8px; min-width:100px; color:var(--charcoal);" value="${escapeHTML(it.name)}" placeholder="Enter item name..." onchange="updateOrderItemField(${idx},'name',this.value)">
+                <span class="mono" style="font-weight:700; white-space:nowrap;">${fmtINR((Number(it.qty)||0)*(Number(it.rate)||0))}</span>
+              </div>
+              <div class="line-item-grid">
+                <div><label>Size</label><select onchange="updateOrderItemField(${idx},'size',this.value)">${sizeOptionsHTML(it.size)}</select></div>
+                <div><label>Fabric</label><input type="text" value="${escapeHTML(it.fabric||'')}" onchange="updateOrderItemField(${idx},'fabric',this.value)"></div>
+                <div><label>Qty</label><input type="number" min="1" value="${it.qty}" onchange="updateOrderItemField(${idx},'qty',parseFloat(this.value)||0)"></div>
+                <div><label>Rate ₹</label><input type="number" value="${it.rate||''}" onchange="updateOrderItemField(${idx},'rate',parseFloat(this.value)||0)"></div>
+                <div class="remove-x" onclick="removeOrderItem(${idx})" title="Remove item">✕</div>
+              </div>
+            </div>
+          `).join('') : `<div style="color:var(--slate); font-size:13px; padding:12px 0;">Koi item add nahi hua abhi.</div>`}
+        </div>
+
+        <h3 style="margin-top:22px;">Notes</h3>
+        <textarea placeholder="Kuch special instructions..." onchange="newOrderState.notes=this.value">${st.notes||''}</textarea>
+      </div>
+
+      <div class="panel">
+        <h3>Charges</h3>
+        <div class="field-row">
+          <div class="field"><label>Shipping Amount (₹)</label><input type="number" value="${st.shippingCharge}" onchange="newOrderState.shippingCharge=parseFloat(this.value)||0; render();"></div>
+          <div class="field"><label>Packing Amount (₹)</label><input type="number" value="${st.otherCharge}" onchange="newOrderState.otherCharge=parseFloat(this.value)||0; render();"></div>
+        </div>
+        <h3 style="margin-top:18px;">Summary</h3>
+        <div class="summary-row"><span>Items Subtotal</span><span class="mono">${fmtINR(itemsSubtotal)}</span></div>
+        ${shippingCharge? `<div class="summary-row"><span>Shipping</span><span class="mono">${fmtINR(shippingCharge)}</span></div>`:''}
+        ${otherCharge? `<div class="summary-row"><span>Packing</span><span class="mono">${fmtINR(otherCharge)}</span></div>`:''}
+        <div class="summary-row total"><span>Total (approx)</span><span class="mono">${fmtINR(total)}</span></div>
+        <div style="font-size:11.5px; color:var(--slate); margin-top:6px;">Note: Ye sirf reference total hai. GST invoice banate waqt final calculation invoice builder mein hoga.</div>
+        <button class="btn btn-primary" style="width:100%; margin-top:18px;" onclick="saveOrder()">${st.editId? 'Update Order' : 'Save Order'}</button>
+        <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="newOrderState=null; navigate('orders');">Cancel</button>
+      </div>
+    </div>
+  `;
+}
+function addOrderItem(){
+  const sel = document.getElementById('orderStylePicker');
+  const id = sel.value;
+  if(!id) return;
+  const style = DB.styles.find(s=>s.id===id);
+  newOrderState.items.push({
+    styleId:style.id, name:style.name, qty:1, rate:styleTotalCost(style),
+    rateUSD: Number(styleTotalCostUSD(style, DB.settings.usdRate).toFixed(2)),
+    size:style.size||'', fabric:style.fabric||'', hsnCode:style.hsnCode||''
+  });
+  render();
+}
+function addManualOrderItem(){
+  newOrderState.items.push({ styleId:null, name:'', qty:1, rate:0, rateUSD:0, size:'', fabric:'', hsnCode:'' });
+  render();
+}
+function updateOrderItemField(idx, field, val){ newOrderState.items[idx][field] = val; render(); }
+function removeOrderItem(idx){ newOrderState.items.splice(idx,1); render(); }
+
+function saveOrder(){
+  const st = newOrderState;
+  if(!st.clientId){ alert('Client select karein'); return; }
+  if(!st.items.length){ alert('Kam se kam ek item add karein'); return; }
+  const client = DB.clients.find(c=>c.id===st.clientId);
+  const orderData = {
+    clientId: st.clientId,
+    clientName: client? client.name : '',
+    date: st.date,
+    orderNo: st.orderNo||'',
+    orderType: st.orderType||'regular',
+    status: st.status || 'pending',
+    items: st.items,
+    trackingNo: st.trackingNo||'',
+    courier: st.courier||'',
+    weight: st.weight||'',
+    shippingCharge: Number(st.shippingCharge)||0,
+    otherCharge: Number(st.otherCharge)||0,
+    notes: st.notes||'',
+    invoiceId: st.invoiceId || null,
+    createdBy: st.editId ? (st.createdBy||'') : (currentUser? currentUser.email : ''),
+    createdAt: st.editId ? (st.createdAt||Date.now()) : Date.now(),
+    updatedBy: currentUser? currentUser.email : '',
+    updatedAt: Date.now()
+  };
+  if(st.editId){
+    db.collection('orders').doc(st.editId).set(orderData, {merge:true})
+      .then(()=>{ newOrderState=null; navigate('orders'); })
+      .catch(err=>alert('Order update fail: '+err.message));
+  } else {
+    db.collection('orders').add(orderData)
+      .then(()=>{ newOrderState=null; navigate('orders'); })
+      .catch(err=>alert('Order save fail: '+err.message));
+  }
+}
+function editOrder(id){
+  const ord = DB.orders.find(o=>o.id===id);
+  if(!ord){ alert('Order nahi mila.'); return; }
+  if(ord.status==='invoiced'){
+    if(!confirm('Ye order already invoice ban chuka hai. Edit karne se sirf order ka record update hoga, uska invoice apne aap change nahi hoga. Continue karein?')) return;
+  }
+  newOrderState = {
+    editId: ord.id,
+    clientId: ord.clientId,
+    date: ord.date,
+    orderNo: ord.orderNo||'',
+    orderType: ord.orderType||'regular',
+    status: ord.status||'pending',
+    items: JSON.parse(JSON.stringify(ord.items||[])),
+    trackingNo: ord.trackingNo||'',
+    courier: ord.courier||'',
+    weight: ord.weight||'',
+    shippingCharge: ord.shippingCharge||0,
+    otherCharge: ord.otherCharge||0,
+    notes: ord.notes||'',
+    invoiceId: ord.invoiceId||null,
+    createdAt: ord.createdAt,
+    createdBy: ord.createdBy||''
+  };
+  currentPage='neworder';
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.page==='orders'));
+  render();
+}
+function deleteOrder(id){
+  if(!confirm('Ye order delete karein? (Agar isse invoice ban chuka hai, wo invoice delete nahi hoga, sirf ye order record delete hoga)')) return;
+  db.collection('orders').doc(id).delete().catch(err=>alert('Delete fail: '+err.message));
+}
+
+let orderListFilters = { month:'', clientId:'', status:'pending' };
+let orderSelection = new Set();
+function setOrderListFilter(field, val){ orderListFilters[field] = val; render(); }
+function toggleOrderSelect(id, checked){ if(checked) orderSelection.add(id); else orderSelection.delete(id); render(); }
+function toggleSelectAllOrders(checked, ids){ ids.forEach(id=> checked? orderSelection.add(id): orderSelection.delete(id)); render(); }
+function clearOrderSelection(){ orderSelection.clear(); render(); }
+
+function renderOrdersList(){
+  const allSorted = [...DB.orders].sort((a,b)=>b.createdAt-a.createdAt);
+  const monthKeys = [...new Set(DB.orders.map(o=>monthKey(o.date)).filter(Boolean))].sort().reverse();
+  const items = allSorted.filter(o=>
+    (!orderListFilters.month || monthKey(o.date)===orderListFilters.month) &&
+    (!orderListFilters.clientId || o.clientId===orderListFilters.clientId) &&
+    (!orderListFilters.status || o.status===orderListFilters.status)
+  );
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Orders</h1>
+        <p class="page-sub">Orders add karein jaise-jaise aate hain, baad mein sabka ek saath invoice bana lein</p>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary" onclick="startNewOrder()">+ New Order</button>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; padding:12px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
+      <div class="field" style="margin:0;">
+        <label>Status</label>
+        <select onchange="setOrderListFilter('status', this.value)">
+          <option value="pending" ${orderListFilters.status==='pending'?'selected':''}>Pending (Invoice Nahi Bana)</option>
+          <option value="invoiced" ${orderListFilters.status==='invoiced'?'selected':''}>Invoiced</option>
+          <option value="" ${orderListFilters.status===''?'selected':''}>Sab</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Month</label>
+        <select onchange="setOrderListFilter('month', this.value)">
+          <option value="">-- Sab Months --</option>
+          ${monthKeys.map(k=>`<option value="${k}" ${orderListFilters.month===k?'selected':''}>${monthLabel(k)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Client</label>
+        <select onchange="setOrderListFilter('clientId', this.value)">
+          <option value="">-- Sab Clients --</option>
+          ${DB.clients.map(c=>`<option value="${c.id}" ${orderListFilters.clientId===c.id?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}
+        </select>
+      </div>
+      ${(orderListFilters.month || orderListFilters.clientId)? `<button class="btn btn-ghost btn-sm" onclick="orderListFilters.month=''; orderListFilters.clientId=''; render();">Filter Clear Karein</button>` : ''}
+    </div>
+    ${orderSelection.size>0? `
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
+      <span style="font-size:12.5px; color:var(--slate);"><b>${orderSelection.size}</b> order(s) selected</span>
+      <button class="btn btn-primary btn-sm" onclick="generateInvoiceFromOrders()">🧾 Selected Orders Ka Invoice Banao</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearOrderSelection()">Clear Selection</button>
+    </div>` : ''}
+    ${items.length? `
+    <table>
+      <thead><tr>
+        <th style="width:32px;"><input type="checkbox" ${items.length && items.every(o=>orderSelection.has(o.id))?'checked':''} onchange="toggleSelectAllOrders(this.checked, ${JSON.stringify(items.map(o=>o.id))})"></th>
+        <th>Date</th><th>Order No</th><th>Client</th><th>Styles</th><th>Tracking</th><th>Total</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${items.map(o=>{
+          const total = (o.items||[]).reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.rate)||0),0) + (Number(o.shippingCharge)||0) + (Number(o.otherCharge)||0);
+          return `
+          <tr>
+            <td><input type="checkbox" ${orderSelection.has(o.id)?'checked':''} onchange="toggleOrderSelect('${o.id}', this.checked)" ${o.status==='invoiced'?'disabled':''}></td>
+            <td>${o.date}</td>
+            <td class="mono">${escapeHTML(o.orderNo||'-')}</td>
+            <td>${escapeHTML(o.clientName)}</td>
+            <td>${(o.items||[]).map(it=>escapeHTML(it.name)).join(', ')}</td>
+            <td>${escapeHTML(o.trackingNo||'')}${o.courier? ' ('+escapeHTML(o.courier)+')':''}</td>
+            <td class="mono">${fmtINR(total)}</td>
+            <td>${o.status==='invoiced'? `<span class="badge badge-gold">Invoiced</span>` : `<span class="badge badge-slate">Pending</span>`}</td>
+            <td>
+              <button class="btn btn-ghost btn-sm" onclick="editOrder('${o.id}')">✎ Edit</button>
+              ${o.status==='invoiced' && o.invoiceId? `<button class="btn btn-ghost btn-sm" onclick="viewInvoice('${o.invoiceId}')">View Invoice</button>`:''}
+              <button class="btn btn-danger btn-sm" onclick="deleteOrder('${o.id}')">Delete</button>
+            </td>
+          </tr>
+        `;}).join('')}
+      </tbody>
+    </table>
+    ` : `<div class="empty-state"><div class="big">▤</div>Is filter mein koi order nahi hai. "New Order" se shuru karein.</div>`}
+  `;
+}
+
+function generateInvoiceFromOrders(){
+  if(!orderSelection.size){ alert('Kam se kam ek order select karein.'); return; }
+  const orders = [...orderSelection].map(id=>DB.orders.find(o=>o.id===id)).filter(Boolean).sort((a,b)=>a.createdAt-b.createdAt);
+  const pendingOrders = orders.filter(o=>o.status!=='invoiced');
+  if(pendingOrders.length !== orders.length){
+    alert('Kuch selected orders already invoiced hain, unhe is naye invoice mein skip kiya ja raha hai.');
+  }
+  if(!pendingOrders.length){ alert('Koi bhi valid (pending) order select nahi hua.'); return; }
+  const clientIds = new Set(pendingOrders.map(o=>o.clientId));
+  if(clientIds.size>1){
+    alert('Sirf ek hi client ke orders ko ek invoice mein combine kar sakte hain. Please Client filter laga kar sirf usi client ke orders select karein.');
+    return;
+  }
+  const first = pendingOrders[0];
+  const combinedItems = [];
+  pendingOrders.forEach(o=>{ (o.items||[]).forEach(it=> combinedItems.push({...it})); });
+  const sumField = f => pendingOrders.reduce((s,o)=>s+(Number(o[f])||0),0);
+  const orderNos = pendingOrders.map(o=>o.orderNo).filter(Boolean).join(', ');
+
+  newInvoiceState = {
+    editId: null,
+    number: `${DB.settings.invoicePrefix}-${String(DB.settings.nextInvoiceNo).padStart(4,'0')}`,
+    clientId: first.clientId,
+    date: todayStr(),
+    orderNo: orderNos,
+    orderType: 'regular',
+    assignedTailorId: '',
+    status: 'pending',
+    items: combinedItems,
+    gstRate: DB.settings.gstRate,
+    notes: `Orders se bana: ${pendingOrders.map(o=>o.orderNo||o.date).join(', ')}`,
+    invoiceType: 'goods',
+    currencyMode: 'INR',
+    usdRate: DB.settings.usdRate,
+    discount: 0, discountUSD: 0,
+    shippingCharge: sumField('shippingCharge'), shippingChargeUSD: 0,
+    otherCharge: sumField('otherCharge'), otherChargeUSD: 0,
+    advanceReceived: 0, advanceReceivedUSD: 0,
+    ewayBillNo: '',
+    transporterName: pendingOrders.map(o=>o.courier).filter(Boolean)[0] || '',
+    vehicleNo: '',
+    sourceOrderIds: pendingOrders.map(o=>o.id)
+  };
+  orderSelection.clear();
+  currentPage='newinvoice';
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.page==='newinvoice'));
+  render();
 }
 
 /* ============================= INVOICE VIEW / PRINT ============================= */
