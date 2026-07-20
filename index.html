@@ -2153,8 +2153,12 @@ function startNewOrder(){
     trackingNo: '',
     courier: '',
     weight: '',
+    currencyMode: 'INR',
+    usdRate: DB.settings.usdRate,
     shippingCharge: 0,
+    shippingChargeUSD: 0,
     otherCharge: 0,
+    otherChargeUSD: 0,
     notes: ''
   };
   currentPage = 'neworder';
@@ -2170,10 +2174,15 @@ function renderOrderBuilder(){
         <div style="margin-top:14px;"><button class="btn btn-primary" onclick="navigate('clients')">Go to Clients</button></div>
       </div>`;
   }
+  const usdRate = Number(st.usdRate) || DB.settings.usdRate || 83;
   const itemsSubtotal = st.items.reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.rate)||0),0);
+  const itemsSubtotalUSD = st.items.reduce((s,it)=>s+(Number(it.qty)||0)*itemUSDRate(it, usdRate),0);
   const shippingCharge = Number(st.shippingCharge)||0;
+  const shippingChargeUSD = (st.shippingChargeUSD!==undefined && st.shippingChargeUSD!=='' && st.shippingChargeUSD!=null) ? Number(st.shippingChargeUSD) : shippingCharge/usdRate;
   const otherCharge = Number(st.otherCharge)||0;
+  const otherChargeUSD = (st.otherChargeUSD!==undefined && st.otherChargeUSD!=='' && st.otherChargeUSD!=null) ? Number(st.otherChargeUSD) : otherCharge/usdRate;
   const total = itemsSubtotal + shippingCharge + otherCharge;
+  const totalUSD = itemsSubtotalUSD + shippingChargeUSD + otherChargeUSD;
 
   return `
     <div class="page-header">
@@ -2221,9 +2230,15 @@ function renderOrderBuilder(){
             <input type="text" value="${escapeHTML(st.courier||'')}" placeholder="e.g. UPS, DHL, DPD" onchange="newOrderState.courier=this.value">
           </div>
         </div>
-        <div class="field" style="margin-bottom:16px;">
-          <label>Weight</label>
-          <input type="text" value="${escapeHTML(st.weight||'')}" placeholder="e.g. 2.5 kg" onchange="newOrderState.weight=this.value">
+        <div class="field-row" style="margin-bottom:16px;">
+          <div class="field">
+            <label>Weight</label>
+            <input type="text" value="${escapeHTML(st.weight||'')}" placeholder="e.g. 2.5 kg" onchange="newOrderState.weight=this.value">
+          </div>
+          <div class="field">
+            <label>Exchange Rate (1 USD = ₹)</label>
+            <input type="number" step="0.01" value="${st.usdRate}" onchange="newOrderState.usdRate=parseFloat(this.value)||DB.settings.usdRate; render();">
+          </div>
         </div>
 
         <h3>Items</h3>
@@ -2240,13 +2255,14 @@ function renderOrderBuilder(){
             <div class="line-item">
               <div class="line-item-top">
                 <input type="text" class="line-item-name" style="font-weight:700; font-size:14px; border:1px solid #E9D5FF; background:#F3E8FF; padding:6px 8px; border-radius:6px; flex:1; margin-right:8px; min-width:100px; color:var(--charcoal);" value="${escapeHTML(it.name)}" placeholder="Enter item name..." onchange="updateOrderItemField(${idx},'name',this.value)">
-                <span class="mono" style="font-weight:700; white-space:nowrap;">${fmtINR((Number(it.qty)||0)*(Number(it.rate)||0))}</span>
+                <span class="mono" style="font-weight:700; white-space:nowrap;">${fmtINR((Number(it.qty)||0)*(Number(it.rate)||0))} &nbsp;/&nbsp; ${fmtUSD((Number(it.qty)||0)*itemUSDRate(it, usdRate))}</span>
               </div>
               <div class="line-item-grid">
                 <div><label>Size</label><select onchange="updateOrderItemField(${idx},'size',this.value)">${sizeOptionsHTML(it.size)}</select></div>
                 <div><label>Fabric</label><input type="text" value="${escapeHTML(it.fabric||'')}" onchange="updateOrderItemField(${idx},'fabric',this.value)"></div>
                 <div><label>Qty</label><input type="number" min="1" value="${it.qty}" onchange="updateOrderItemField(${idx},'qty',parseFloat(this.value)||0)"></div>
                 <div><label>Rate ₹</label><input type="number" value="${it.rate||''}" onchange="updateOrderItemField(${idx},'rate',parseFloat(this.value)||0)"></div>
+                <div><label>Rate $</label><input type="number" step="0.01" value="${it.rateUSD||''}" placeholder="${(Number(it.rate||0)/usdRate).toFixed(2)}" onchange="updateOrderItemField(${idx},'rateUSD',parseFloat(this.value)||0)"></div>
                 <div class="remove-x" onclick="removeOrderItem(${idx})" title="Remove item">✕</div>
               </div>
             </div>
@@ -2260,14 +2276,18 @@ function renderOrderBuilder(){
       <div class="panel">
         <h3>Charges</h3>
         <div class="field-row">
-          <div class="field"><label>Shipping Amount (₹)</label><input type="number" value="${st.shippingCharge}" onchange="newOrderState.shippingCharge=parseFloat(this.value)||0; render();"></div>
-          <div class="field"><label>Packing Amount (₹)</label><input type="number" value="${st.otherCharge}" onchange="newOrderState.otherCharge=parseFloat(this.value)||0; render();"></div>
+          <div class="field"><label>Shipping (₹)</label><input type="number" value="${st.shippingCharge}" onchange="newOrderState.shippingCharge=parseFloat(this.value)||0; render();"></div>
+          <div class="field"><label>Shipping ($)</label><input type="number" step="0.01" value="${st.shippingChargeUSD}" placeholder="${(shippingCharge/usdRate).toFixed(2)}" onchange="newOrderState.shippingChargeUSD=parseFloat(this.value)||0; render();"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Packing (₹)</label><input type="number" value="${st.otherCharge}" onchange="newOrderState.otherCharge=parseFloat(this.value)||0; render();"></div>
+          <div class="field"><label>Packing ($)</label><input type="number" step="0.01" value="${st.otherChargeUSD}" placeholder="${(otherCharge/usdRate).toFixed(2)}" onchange="newOrderState.otherChargeUSD=parseFloat(this.value)||0; render();"></div>
         </div>
         <h3 style="margin-top:18px;">Summary</h3>
-        <div class="summary-row"><span>Items Subtotal</span><span class="mono">${fmtINR(itemsSubtotal)}</span></div>
-        ${shippingCharge? `<div class="summary-row"><span>Shipping</span><span class="mono">${fmtINR(shippingCharge)}</span></div>`:''}
-        ${otherCharge? `<div class="summary-row"><span>Packing</span><span class="mono">${fmtINR(otherCharge)}</span></div>`:''}
-        <div class="summary-row total"><span>Total (approx)</span><span class="mono">${fmtINR(total)}</span></div>
+        <div class="summary-row"><span>Items Subtotal</span><span class="mono">${fmtINR(itemsSubtotal)} &nbsp;/&nbsp; ${fmtUSD(itemsSubtotalUSD)}</span></div>
+        ${shippingCharge? `<div class="summary-row"><span>Shipping</span><span class="mono">${fmtINR(shippingCharge)} &nbsp;/&nbsp; ${fmtUSD(shippingChargeUSD)}</span></div>`:''}
+        ${otherCharge? `<div class="summary-row"><span>Packing</span><span class="mono">${fmtINR(otherCharge)} &nbsp;/&nbsp; ${fmtUSD(otherChargeUSD)}</span></div>`:''}
+        <div class="summary-row total"><span>Total (approx)</span><span class="mono">${fmtINR(total)} &nbsp;/&nbsp; ${fmtUSD(totalUSD)}</span></div>
         <div style="font-size:11.5px; color:var(--slate); margin-top:6px;">Note: Ye sirf reference total hai. GST invoice banate waqt final calculation invoice builder mein hoga.</div>
         <button class="btn btn-primary" style="width:100%; margin-top:18px;" onclick="saveOrder()">${st.editId? 'Update Order' : 'Save Order'}</button>
         <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="newOrderState=null; navigate('orders');">Cancel</button>
@@ -2310,8 +2330,11 @@ function saveOrder(){
     trackingNo: st.trackingNo||'',
     courier: st.courier||'',
     weight: st.weight||'',
+    usdRate: Number(st.usdRate)||DB.settings.usdRate,
     shippingCharge: Number(st.shippingCharge)||0,
+    shippingChargeUSD: Number(st.shippingChargeUSD)||0,
     otherCharge: Number(st.otherCharge)||0,
+    otherChargeUSD: Number(st.otherChargeUSD)||0,
     notes: st.notes||'',
     invoiceId: st.invoiceId || null,
     createdBy: st.editId ? (st.createdBy||'') : (currentUser? currentUser.email : ''),
@@ -2346,8 +2369,11 @@ function editOrder(id){
     trackingNo: ord.trackingNo||'',
     courier: ord.courier||'',
     weight: ord.weight||'',
+    usdRate: ord.usdRate||DB.settings.usdRate,
     shippingCharge: ord.shippingCharge||0,
+    shippingChargeUSD: ord.shippingChargeUSD||0,
     otherCharge: ord.otherCharge||0,
+    otherChargeUSD: ord.otherChargeUSD||0,
     notes: ord.notes||'',
     invoiceId: ord.invoiceId||null,
     createdAt: ord.createdAt,
@@ -2426,7 +2452,9 @@ function renderOrdersList(){
       </tr></thead>
       <tbody>
         ${items.map(o=>{
+          const usdRate = Number(o.usdRate) || DB.settings.usdRate || 83;
           const total = (o.items||[]).reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.rate)||0),0) + (Number(o.shippingCharge)||0) + (Number(o.otherCharge)||0);
+          const totalUSD = (o.items||[]).reduce((s,it)=>s+(Number(it.qty)||0)*itemUSDRate(it, usdRate),0) + (Number(o.shippingChargeUSD)||(Number(o.shippingCharge)||0)/usdRate) + (Number(o.otherChargeUSD)||(Number(o.otherCharge)||0)/usdRate);
           return `
           <tr>
             <td><input type="checkbox" ${orderSelection.has(o.id)?'checked':''} onchange="toggleOrderSelect('${o.id}', this.checked)" ${o.status==='invoiced'?'disabled':''}></td>
@@ -2435,7 +2463,7 @@ function renderOrdersList(){
             <td>${escapeHTML(o.clientName)}</td>
             <td>${(o.items||[]).map(it=>escapeHTML(it.name)).join(', ')}</td>
             <td>${escapeHTML(o.trackingNo||'')}${o.courier? ' ('+escapeHTML(o.courier)+')':''}</td>
-            <td class="mono">${fmtINR(total)}</td>
+            <td class="mono">${fmtINR(total)} <span style="color:var(--slate); font-weight:400;">/ ${fmtUSD(totalUSD)}</span></td>
             <td>${o.status==='invoiced'? `<span class="badge badge-gold">Invoiced</span>` : `<span class="badge badge-slate">Pending</span>`}</td>
             <td>
               <button class="btn btn-ghost btn-sm" onclick="editOrder('${o.id}')">✎ Edit</button>
@@ -2467,6 +2495,11 @@ function generateInvoiceFromOrders(){
   const combinedItems = [];
   pendingOrders.forEach(o=>{ (o.items||[]).forEach(it=> combinedItems.push({...it})); });
   const sumField = f => pendingOrders.reduce((s,o)=>s+(Number(o[f])||0),0);
+  const sumFieldUSD = (inrField, usdField) => pendingOrders.reduce((s,o)=>{
+    const rate = Number(o.usdRate) || DB.settings.usdRate || 83;
+    const usdVal = (o[usdField]!==undefined && o[usdField]!=='' && o[usdField]!=null) ? Number(o[usdField]) : (Number(o[inrField])||0)/rate;
+    return s + usdVal;
+  }, 0);
   const orderNos = pendingOrders.map(o=>o.orderNo).filter(Boolean).join(', ');
 
   newInvoiceState = {
@@ -2485,8 +2518,8 @@ function generateInvoiceFromOrders(){
     currencyMode: 'INR',
     usdRate: DB.settings.usdRate,
     discount: 0, discountUSD: 0,
-    shippingCharge: sumField('shippingCharge'), shippingChargeUSD: 0,
-    otherCharge: sumField('otherCharge'), otherChargeUSD: 0,
+    shippingCharge: sumField('shippingCharge'), shippingChargeUSD: Number(sumFieldUSD('shippingCharge','shippingChargeUSD').toFixed(2)),
+    otherCharge: sumField('otherCharge'), otherChargeUSD: Number(sumFieldUSD('otherCharge','otherChargeUSD').toFixed(2)),
     advanceReceived: 0, advanceReceivedUSD: 0,
     ewayBillNo: '',
     transporterName: pendingOrders.map(o=>o.courier).filter(Boolean)[0] || '',
