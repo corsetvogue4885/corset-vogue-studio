@@ -2153,7 +2153,7 @@ function startNewOrder(){
     trackingNo: '',
     courier: '',
     weight: '',
-    currencyMode: 'INR',
+    currencyMode: 'BOTH',
     usdRate: DB.settings.usdRate,
     shippingCharge: 0,
     shippingChargeUSD: 0,
@@ -2175,6 +2175,8 @@ function renderOrderBuilder(){
       </div>`;
   }
   const usdRate = Number(st.usdRate) || DB.settings.usdRate || 83;
+  const showINR = st.currencyMode !== 'USD';
+  const showUSD = st.currencyMode !== 'INR';
   const itemsSubtotal = st.items.reduce((s,it)=>s+(Number(it.qty)||0)*(Number(it.rate)||0),0);
   const itemsSubtotalUSD = st.items.reduce((s,it)=>s+(Number(it.qty)||0)*itemUSDRate(it, usdRate),0);
   const shippingCharge = Number(st.shippingCharge)||0;
@@ -2261,8 +2263,8 @@ function renderOrderBuilder(){
                 <div><label>Size</label><select onchange="updateOrderItemField(${idx},'size',this.value)">${sizeOptionsHTML(it.size)}</select></div>
                 <div><label>Fabric</label><input type="text" value="${escapeHTML(it.fabric||'')}" onchange="updateOrderItemField(${idx},'fabric',this.value)"></div>
                 <div><label>Qty</label><input type="number" min="1" value="${it.qty}" onchange="updateOrderItemField(${idx},'qty',parseFloat(this.value)||0)"></div>
-                <div><label>Rate ₹</label><input type="number" value="${it.rate||''}" onchange="updateOrderItemField(${idx},'rate',parseFloat(this.value)||0)"></div>
-                <div><label>Rate $</label><input type="number" step="0.01" value="${it.rateUSD||''}" placeholder="${(Number(it.rate||0)/usdRate).toFixed(2)}" onchange="updateOrderItemField(${idx},'rateUSD',parseFloat(this.value)||0)"></div>
+                ${showINR? `<div><label>Rate ₹</label><input type="number" value="${it.rate||''}" onchange="updateOrderItemField(${idx},'rate',parseFloat(this.value)||0)"></div>`:''}
+                ${showUSD? `<div><label>Rate $</label><input type="number" step="0.01" value="${it.rateUSD||''}" placeholder="${(Number(it.rate||0)/usdRate).toFixed(2)}" onchange="updateOrderItemField(${idx},'rateUSD',parseFloat(this.value)||0)"></div>`:''}
                 <div class="remove-x" onclick="removeOrderItem(${idx})" title="Remove item">✕</div>
               </div>
             </div>
@@ -2274,20 +2276,28 @@ function renderOrderBuilder(){
       </div>
 
       <div class="panel">
-        <h3>Charges</h3>
+        <h3>Currency</h3>
+        <div class="currency-toggle">
+          <button class="${st.currencyMode==='INR'?'active':''}" onclick="setOrderCurrencyMode('INR')">₹ INR</button>
+          <button class="${st.currencyMode==='USD'?'active':''}" onclick="setOrderCurrencyMode('USD')">$ USD</button>
+          <button class="${st.currencyMode==='BOTH'?'active':''}" onclick="setOrderCurrencyMode('BOTH')">₹ + $ Both</button>
+        </div>
+        <div style="font-size:11.5px; color:var(--slate); margin:8px 0 4px;">Rate/charges yahan se select karein — "Both" chunne par dono currencies mein entry kar sakte hain.</div>
+
+        <h3 style="margin-top:18px;">Charges</h3>
         <div class="field-row">
-          <div class="field"><label>Shipping (₹)</label><input type="number" value="${st.shippingCharge}" onchange="newOrderState.shippingCharge=parseFloat(this.value)||0; render();"></div>
-          <div class="field"><label>Shipping ($)</label><input type="number" step="0.01" value="${st.shippingChargeUSD}" placeholder="${(shippingCharge/usdRate).toFixed(2)}" onchange="newOrderState.shippingChargeUSD=parseFloat(this.value)||0; render();"></div>
+          ${showINR? `<div class="field"><label>Shipping (₹)</label><input type="number" value="${st.shippingCharge}" onchange="newOrderState.shippingCharge=parseFloat(this.value)||0; render();"></div>`:''}
+          ${showUSD? `<div class="field"><label>Shipping ($)</label><input type="number" step="0.01" value="${st.shippingChargeUSD}" placeholder="${(shippingCharge/usdRate).toFixed(2)}" onchange="newOrderState.shippingChargeUSD=parseFloat(this.value)||0; render();"></div>`:''}
         </div>
         <div class="field-row">
-          <div class="field"><label>Packing (₹)</label><input type="number" value="${st.otherCharge}" onchange="newOrderState.otherCharge=parseFloat(this.value)||0; render();"></div>
-          <div class="field"><label>Packing ($)</label><input type="number" step="0.01" value="${st.otherChargeUSD}" placeholder="${(otherCharge/usdRate).toFixed(2)}" onchange="newOrderState.otherChargeUSD=parseFloat(this.value)||0; render();"></div>
+          ${showINR? `<div class="field"><label>Packing (₹)</label><input type="number" value="${st.otherCharge}" onchange="newOrderState.otherCharge=parseFloat(this.value)||0; render();"></div>`:''}
+          ${showUSD? `<div class="field"><label>Packing ($)</label><input type="number" step="0.01" value="${st.otherChargeUSD}" placeholder="${(otherCharge/usdRate).toFixed(2)}" onchange="newOrderState.otherChargeUSD=parseFloat(this.value)||0; render();"></div>`:''}
         </div>
         <h3 style="margin-top:18px;">Summary</h3>
-        <div class="summary-row"><span>Items Subtotal</span><span class="mono">${fmtINR(itemsSubtotal)} &nbsp;/&nbsp; ${fmtUSD(itemsSubtotalUSD)}</span></div>
-        ${shippingCharge? `<div class="summary-row"><span>Shipping</span><span class="mono">${fmtINR(shippingCharge)} &nbsp;/&nbsp; ${fmtUSD(shippingChargeUSD)}</span></div>`:''}
-        ${otherCharge? `<div class="summary-row"><span>Packing</span><span class="mono">${fmtINR(otherCharge)} &nbsp;/&nbsp; ${fmtUSD(otherChargeUSD)}</span></div>`:''}
-        <div class="summary-row total"><span>Total (approx)</span><span class="mono">${fmtINR(total)} &nbsp;/&nbsp; ${fmtUSD(totalUSD)}</span></div>
+        <div class="summary-row"><span>Items Subtotal</span><span class="mono">${showINR?fmtINR(itemsSubtotal):''}${showINR&&showUSD?' / ':''}${showUSD?fmtUSD(itemsSubtotalUSD):''}</span></div>
+        ${shippingCharge||shippingChargeUSD? `<div class="summary-row"><span>Shipping</span><span class="mono">${showINR?fmtINR(shippingCharge):''}${showINR&&showUSD?' / ':''}${showUSD?fmtUSD(shippingChargeUSD):''}</span></div>`:''}
+        ${otherCharge||otherChargeUSD? `<div class="summary-row"><span>Packing</span><span class="mono">${showINR?fmtINR(otherCharge):''}${showINR&&showUSD?' / ':''}${showUSD?fmtUSD(otherChargeUSD):''}</span></div>`:''}
+        <div class="summary-row total"><span>Total (approx)</span><span class="mono">${showINR?fmtINR(total):''}${showINR&&showUSD?' / ':''}${showUSD?fmtUSD(totalUSD):''}</span></div>
         <div style="font-size:11.5px; color:var(--slate); margin-top:6px;">Note: Ye sirf reference total hai. GST invoice banate waqt final calculation invoice builder mein hoga.</div>
         <button class="btn btn-primary" style="width:100%; margin-top:18px;" onclick="saveOrder()">${st.editId? 'Update Order' : 'Save Order'}</button>
         <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="newOrderState=null; navigate('orders');">Cancel</button>
@@ -2295,6 +2305,7 @@ function renderOrderBuilder(){
     </div>
   `;
 }
+function setOrderCurrencyMode(mode){ newOrderState.currencyMode = mode; render(); }
 function addOrderItem(){
   const sel = document.getElementById('orderStylePicker');
   const id = sel.value;
@@ -2330,6 +2341,7 @@ function saveOrder(){
     trackingNo: st.trackingNo||'',
     courier: st.courier||'',
     weight: st.weight||'',
+    currencyMode: st.currencyMode || 'BOTH',
     usdRate: Number(st.usdRate)||DB.settings.usdRate,
     shippingCharge: Number(st.shippingCharge)||0,
     shippingChargeUSD: Number(st.shippingChargeUSD)||0,
@@ -2369,6 +2381,7 @@ function editOrder(id){
     trackingNo: ord.trackingNo||'',
     courier: ord.courier||'',
     weight: ord.weight||'',
+    currencyMode: ord.currencyMode || 'BOTH',
     usdRate: ord.usdRate||DB.settings.usdRate,
     shippingCharge: ord.shippingCharge||0,
     shippingChargeUSD: ord.shippingChargeUSD||0,
