@@ -1093,11 +1093,16 @@ function generateCatalogPDF(){
     <div style="margin-top:20px; padding-top:12px; border-top:1px solid #E9D5FF; font-size:10.5px; color:#64748B; text-align:center;">Generated ${todayStr()}</div>
   `;
   document.body.appendChild(wrap);
-  html2canvas(wrap, {scale:2, backgroundColor:'#F8F7FC', useCORS:true}).then(canvas=>{
+  const cssWidthPx = wrap.offsetWidth;
+  const cssHeightPx = wrap.offsetHeight;
+  html2canvas(wrap, {scale:2, width:cssWidthPx, windowWidth:cssWidthPx, backgroundColor:'#F8F7FC', useCORS:true}).then(canvas=>{
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit:'px', format:[canvas.width, canvas.height] });
-    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+    const pxToMm = px => px * 25.4 / 96;
+    const pageWidthMm = pxToMm(cssWidthPx);
+    const pageHeightMm = pxToMm(cssHeightPx);
+    const pdf = new jsPDF({ unit:'mm', format:[pageWidthMm, pageHeightMm] });
+    pdf.addImage(imgData, 'PNG', 0, 0, pageWidthMm, pageHeightMm);
     pdf.save(`Catalog-${client?client.name.replace(/[^a-z0-9]/gi,'_'):'General'}-${todayStr()}.pdf`);
     document.body.removeChild(wrap);
   }).catch(err=>{
