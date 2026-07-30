@@ -2018,9 +2018,44 @@ function renderInvoiceBuilder(){
             ${DB.styles.filter(s=>!s.clientId || s.clientId===st.clientId).map(s=>`<option value="${s.id}">${escapeHTML(s.name)} (${fmtINR(styleTotalCost(s))})</option>`).join('')}
           </select>
           <button class="btn btn-ghost" onclick="addInvoiceItem()">Add</button>
+          <button class="btn btn-ghost" onclick="openSizeQtyPanel()">+ Add by Sizes</button>
           <button class="btn btn-ghost" onclick="addManualInvoiceItem()">+ Manual Entry</button>
         </div>
-        <div style="font-size:11.5px; color:var(--slate); margin:-4px 0 10px 0;">Sirf is client ki styles aur General Catalog wali styles dikh rahi hain. Ya phir "+ Manual Entry" se koi bhi item bina catalog ke seedha type kar ke add karein.</div>
+        <div style="font-size:11.5px; color:var(--slate); margin:-4px 0 10px 0;">Sirf is client ki styles aur General Catalog wali styles dikh rahi hain. "+ Add by Sizes" se ek hi style ko multiple sizes mein alag-alag qty ke saath ek baar mein add karein. Ya phir "+ Manual Entry" se koi bhi item bina catalog ke seedha type kar ke add karein.</div>
+        ${st.sizeQtyPanel ? (()=>{
+          const panel = st.sizeQtyPanel;
+          const style = DB.styles.find(s=>s.id===panel.styleId);
+          const quickSizes = SIZE_OPTIONS.filter(sz=>sz!=='Custom');
+          const totalQty = quickSizes.reduce((sum,sz)=> sum + (Number(panel.qtys[sz])||0), 0) + (Number(panel.qtys['__custom'])||0);
+          return `
+          <div style="border:1px solid var(--line); background:var(--accent-light); border-radius:10px; padding:14px; margin-bottom:14px;">
+            <div style="font-weight:700; margin-bottom:8px;">📐 ${escapeHTML(style? style.name:'')} — Har size ke saamne qty daalein</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(80px,1fr)); gap:8px; margin-bottom:10px;">
+              ${quickSizes.map(sz=>`
+                <div>
+                  <label style="font-size:11px; display:block; margin-bottom:2px;">${sz}</label>
+                  <input type="number" min="0" value="${panel.qtys[sz]||''}" placeholder="0" style="width:100%;" onchange="updateSizeQtyPanel('${sz}', this.value)">
+                </div>
+              `).join('')}
+            </div>
+            <div style="display:flex; gap:8px; align-items:flex-end; margin-bottom:10px;">
+              <div style="flex:1;">
+                <label style="font-size:11px; display:block; margin-bottom:2px;">Custom Size (optional)</label>
+                <input type="text" value="${escapeHTML(panel.customSize||'')}" placeholder="e.g. 42 or Free Size" onchange="newInvoiceState.sizeQtyPanel.customSize=this.value">
+              </div>
+              <div style="width:100px;">
+                <label style="font-size:11px; display:block; margin-bottom:2px;">Qty</label>
+                <input type="number" min="0" value="${panel.qtys['__custom']||''}" placeholder="0" onchange="updateSizeQtyPanel('__custom', this.value)">
+              </div>
+            </div>
+            <div style="font-size:11.5px; color:var(--slate); margin-bottom:10px;">Total Qty: <b>${totalQty}</b> — har size jismein qty &gt; 0 hai, uska alag line item banega (same rate ke saath).</div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-primary" onclick="confirmSizeQtyAdd()">Add to Invoice</button>
+              <button class="btn btn-ghost" onclick="newInvoiceState.sizeQtyPanel=null; render();">Cancel</button>
+            </div>
+          </div>
+          `;
+        })() : ''}
         <div id="lineItems">
           ${st.items.length? st.items.map((it,idx)=>`
             <div class="line-item">
@@ -2116,6 +2151,48 @@ function addManualInvoiceItem(){
     styleId:null, name:'', qty:1, rate:0, rateUSD:0,
     size:'', fabric:'', hsnCode:''
   });
+  render();
+}
+function openSizeQtyPanel(){
+  const sel = document.getElementById('stylePicker');
+  const id = sel.value;
+  if(!id){ alert('Pehle ek style select karein, phir "+ Add by Sizes" click karein'); return; }
+  newInvoiceState.sizeQtyPanel = { styleId:id, qtys:{}, customSize:'' };
+  render();
+}
+function updateSizeQtyPanel(key, val){
+  if(!newInvoiceState.sizeQtyPanel) return;
+  newInvoiceState.sizeQtyPanel.qtys[key] = parseFloat(val)||0;
+  render();
+}
+function confirmSizeQtyAdd(){
+  const panel = newInvoiceState.sizeQtyPanel;
+  if(!panel) return;
+  const style = DB.styles.find(s=>s.id===panel.styleId);
+  if(!style){ alert('Style nahi mila'); newInvoiceState.sizeQtyPanel=null; render(); return; }
+  const rate = styleTotalCost(style);
+  const rateUSD = Number(styleTotalCostUSD(style, DB.settings.usdRate).toFixed(2));
+  let added = 0;
+  SIZE_OPTIONS.filter(sz=>sz!=='Custom').forEach(sz=>{
+    const qty = Number(panel.qtys[sz])||0;
+    if(qty>0){
+      newInvoiceState.items.push({
+        styleId:style.id, name:style.name, qty, rate, rateUSD,
+        size:sz, fabric:style.fabric||'', hsnCode:style.hsnCode||''
+      });
+      added++;
+    }
+  });
+  const customQty = Number(panel.qtys['__custom'])||0;
+  if(customQty>0 && panel.customSize && panel.customSize.trim()){
+    newInvoiceState.items.push({
+      styleId:style.id, name:style.name, qty:customQty, rate, rateUSD,
+      size:panel.customSize.trim(), fabric:style.fabric||'', hsnCode:style.hsnCode||''
+    });
+    added++;
+  }
+  if(added===0){ alert('Kam se kam ek size mein qty daalein'); return; }
+  newInvoiceState.sizeQtyPanel = null;
   render();
 }
 function updateItemField(idx, field, val){ newInvoiceState.items[idx][field] = val; render(); }
