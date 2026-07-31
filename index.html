@@ -1532,11 +1532,13 @@ function downloadInvoicePDF(invId){
   const btn = document.getElementById('pdfDownloadBtn');
   const originalText = btn? btn.textContent : '';
   if(btn) btn.textContent = 'Generating...';
-  html2canvas(billEl, {scale:2, backgroundColor:'#FFFDF9', useCORS:true}).then(canvas=>{
-    const imgData = canvas.toDataURL('image/png');
+  const billW = billEl.scrollWidth;
+  const billH = billEl.scrollHeight;
+  html2canvas(billEl, {scale:1.5, width:billW, height:billH, windowWidth:billW, windowHeight:billH, backgroundColor:'#FFFDF9', useCORS:true}).then(canvas=>{
+    const imgData = canvas.toDataURL('image/jpeg', 0.8);
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ unit:'px', format:[canvas.width, canvas.height] });
-    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+    const pdf = new jsPDF({ unit:'px', format:[canvas.width, canvas.height], compress:true });
+    pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
     pdf.save(`${inv.number}.pdf`);
     if(btn) btn.textContent = originalText;
   }).catch(err=>{
