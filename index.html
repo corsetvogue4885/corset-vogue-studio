@@ -521,18 +521,19 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
       <span class="sidebar-collapse-btn" onclick="toggleSidebarCollapse()" title="Collapse sidebar"><i class="ti ti-chevron-left"></i></span>
     </div>
     <div class="brand-sub">Style &amp; Invoice Book</div>
-    <div class="nav-item active" data-page="dashboard"><span class="nav-icon-chip"><i class="ti ti-layout-dashboard"></i></span><span class="nav-label">Dashboard</span></div>
-    <div class="nav-item" data-page="styles"><span class="nav-icon-chip"><i class="ti ti-shirt"></i></span><span class="nav-label">Styles</span></div>
-    <div class="nav-item" data-page="listings"><span class="nav-icon-chip"><i class="ti ti-list-details"></i></span><span class="nav-label">Listing Manager</span></div>
-    <div class="nav-item" data-page="costing"><span class="nav-icon-chip"><i class="ti ti-calculator"></i></span><span class="nav-label">Costing</span></div>
-    <div class="nav-item" data-page="vendors"><span class="nav-icon-chip"><i class="ti ti-truck"></i></span><span class="nav-label">Vendors</span></div>
-    <div class="nav-item" data-page="catalog"><span class="nav-icon-chip"><i class="ti ti-book-2"></i></span><span class="nav-label">Catalog</span></div>
-    <div class="nav-item" data-page="clients"><span class="nav-icon-chip"><i class="ti ti-users"></i></span><span class="nav-label">Clients</span></div>
-    <div class="nav-item" data-page="orders"><span class="nav-icon-chip"><i class="ti ti-shopping-cart"></i></span><span class="nav-label">Orders</span></div>
-    <div class="nav-item" data-page="invoices"><span class="nav-icon-chip"><i class="ti ti-file-invoice"></i></span><span class="nav-label">Invoices</span></div>
-    <div class="nav-item" data-page="challans"><span class="nav-icon-chip"><i class="ti ti-truck-delivery"></i></span><span class="nav-label">Challans</span></div>
-    <div class="nav-item" data-page="newchallan"><span class="nav-icon-chip"><i class="ti ti-file-plus"></i></span><span class="nav-label">New Challan</span></div>
-    <div class="nav-item" data-page="links"><span class="nav-icon-chip"><i class="ti ti-link"></i></span><span class="nav-label">Links</span></div>
+    <div class="nav-item active hide-for-runner" data-page="dashboard"><span class="nav-icon-chip"><i class="ti ti-layout-dashboard"></i></span><span class="nav-label">Dashboard</span></div>
+    <div class="nav-item hide-for-runner" data-page="styles"><span class="nav-icon-chip"><i class="ti ti-shirt"></i></span><span class="nav-label">Styles</span></div>
+    <div class="nav-item hide-for-runner" data-page="listings"><span class="nav-icon-chip"><i class="ti ti-list-details"></i></span><span class="nav-label">Listing Manager</span></div>
+    <div class="nav-item hide-for-runner" data-page="costing"><span class="nav-icon-chip"><i class="ti ti-calculator"></i></span><span class="nav-label">Costing</span></div>
+    <div class="nav-item hide-for-runner" data-page="vendors"><span class="nav-icon-chip"><i class="ti ti-truck"></i></span><span class="nav-label">Vendors</span></div>
+    <div class="nav-item hide-for-runner" data-page="catalog"><span class="nav-icon-chip"><i class="ti ti-book-2"></i></span><span class="nav-label">Catalog</span></div>
+    <div class="nav-item hide-for-runner" data-page="clients"><span class="nav-icon-chip"><i class="ti ti-users"></i></span><span class="nav-label">Clients</span></div>
+    <div class="nav-item hide-for-runner" data-page="orders"><span class="nav-icon-chip"><i class="ti ti-shopping-cart"></i></span><span class="nav-label">Orders</span></div>
+    <div class="nav-item hide-for-runner" data-page="invoices"><span class="nav-icon-chip"><i class="ti ti-file-invoice"></i></span><span class="nav-label">Invoices</span></div>
+    <div class="nav-item hide-for-runner" data-page="challans"><span class="nav-icon-chip"><i class="ti ti-truck-delivery"></i></span><span class="nav-label">Challans</span></div>
+    <div class="nav-item hide-for-runner" data-page="newchallan"><span class="nav-icon-chip"><i class="ti ti-file-plus"></i></span><span class="nav-label">New Challan</span></div>
+    <div class="nav-item hide-for-runner" data-page="links"><span class="nav-icon-chip"><i class="ti ti-link"></i></span><span class="nav-label">Links</span></div>
+    <div class="nav-item" data-page="pettycash"><span class="nav-icon-chip"><i class="ti ti-cash"></i></span><span class="nav-label">Petty Cash</span></div>
     <div class="nav-item admin-only-nav" data-page="settings"><span class="nav-icon-chip"><i class="ti ti-settings"></i></span><span class="nav-label">Settings</span></div>
     <div class="nav-item admin-only-nav" data-page="team"><span class="nav-icon-chip"><i class="ti ti-users-group"></i></span><span class="nav-label">Team <span id="teamPendingBadge"></span></span></div>
     <div class="sidebar-search-wrap" style="padding:12px; border-top:1px solid var(--line); margin-top:8px;">
@@ -728,22 +729,24 @@ let DB = {
   listingAccounts: [],
   users: [],
   links: [],
-  pendingUsers: []
+  pendingUsers: [],
+  pettyCash: []
 };
 let currentUser = null;
 let currentUserRole = 'admin'; // 'admin' or 'tailor' -- used by the separate tailor self-service portal, unrelated to staff roles below
 let currentTailorId = null;
 let listenersActive = false;
 let unsubscribers = [];
-let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false, users:false, links:false, pendingUsers:false };
+let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false, users:false, links:false, pendingUsers:false, pettyCash:false };
 
 /* ---- Staff access control (Admin / Staff roles) ---- */
 let appRole = null;         // 'admin' | 'staff' | null (not yet known)
 let appRoleReady = false;   // becomes true once we've read the ID token claims
 const ADMIN_ONLY_PAGES = ['settings','team'];
+const RUNNER_ALLOWED_PAGES = ['pettycash'];
 
 function allLoaded(){
-  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts && loadedFlags.users && loadedFlags.links && loadedFlags.pendingUsers;
+  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts && loadedFlags.users && loadedFlags.links && loadedFlags.pendingUsers && loadedFlags.pettyCash;
 }
 
 function attachListeners(){
@@ -837,6 +840,13 @@ function attachListeners(){
     afterSync();
     render();
   }, err=>{ console.error(err); loadedFlags.pendingUsers = true; afterSync(); }));
+
+  unsubscribers.push(db.collection('pettyCash').onSnapshot(snap=>{
+    DB.pettyCash = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    loadedFlags.pettyCash = true;
+    afterSync();
+    if(currentPage==='pettycash') render();
+  }, err=>{ console.error(err); loadedFlags.pettyCash = true; afterSync(); }));
 }
 function detachListeners(){
   unsubscribers.forEach(u=>{ try{ u(); }catch(e){} });
@@ -1103,6 +1113,10 @@ function navigate(page){
     alert('Only Admins have access to this section.');
     return;
   }
+  if(appRole === 'runner' && !RUNNER_ALLOWED_PAGES.includes(page)){
+    alert('Your account only has access to Petty Cash.');
+    return;
+  }
   currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active', el.dataset.page===page);
@@ -1164,6 +1178,7 @@ function render(){
     }
   }
   document.querySelectorAll('.admin-only-nav').forEach(el=>{ el.style.display = isAdmin() ? '' : 'none'; });
+  document.querySelectorAll('.hide-for-runner').forEach(el=>{ el.style.display = (appRole==='runner') ? 'none' : ''; });
   const teamBadgeEl = document.getElementById('teamPendingBadge');
   if(teamBadgeEl){
     const pendingCount = (DB.pendingUsers||[]).length;
@@ -1172,6 +1187,9 @@ function render(){
   }
   if(ADMIN_ONLY_PAGES.includes(currentPage) && appRoleReady && !isAdmin()){
     currentPage = 'dashboard';
+  }
+  if(appRole === 'runner' && !RUNNER_ALLOWED_PAGES.includes(currentPage)){
+    currentPage = 'pettycash';
   }
   const main = document.getElementById('main');
   if(currentPage==='dashboard') main.innerHTML = renderDashboard();
@@ -1197,6 +1215,7 @@ function render(){
   else if(currentPage==='settings') main.innerHTML = renderSettings();
   else if(currentPage==='team') main.innerHTML = renderTeam();
   else if(currentPage==='links') main.innerHTML = renderLinks();
+  else if(currentPage==='pettycash') main.innerHTML = renderPettyCash();
   else if(currentPage==='search') main.innerHTML = renderSearchResults(window._searchResults||[]);
 }
 
@@ -4237,6 +4256,7 @@ function renderTeam(){
       <td>
         <select onchange="changeUserRole('${u.id}', this.value)" ${u.id===currentUser.uid?'disabled title="You can\'t change your own role"':''}>
           <option value="staff" ${u.role==='staff'?'selected':''}>Staff</option>
+          <option value="runner" ${u.role==='runner'?'selected':''}>Runner</option>
           <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
         </select>
       </td>
@@ -4267,6 +4287,7 @@ function renderTeam(){
               <td>
                 <select id="pending_role_${p.id}">
                   <option value="staff" selected>Staff</option>
+                  <option value="runner">Runner</option>
                   <option value="admin">Admin</option>
                 </select>
               </td>
@@ -4301,6 +4322,7 @@ function renderTeam(){
       <ul style="font-size:13px; color:var(--slate); padding-left:18px; line-height:1.7;">
         <li><b>Admin</b> can see everything, add/remove staff, and change Settings.</li>
         <li><b>Staff</b> can do daily work (styles, invoices, orders, clients, etc.), but not Team or Settings.</li>
+        <li><b>Runner</b> can only see the Petty Cash page (nothing else) — meant for field/sourcing staff.</li>
         <li>When you <b>Deactivate</b> someone, their login stops working shortly after (within a few minutes).</li>
         <li><b>Remove</b> permanently deletes their account.</li>
       </ul>
@@ -4329,6 +4351,7 @@ function openAddUserModal(){
     <div class="field"><label>Role</label>
       <select id="nu_role">
         <option value="staff" selected>Staff</option>
+        <option value="runner">Runner</option>
         <option value="admin">Admin</option>
       </select>
     </div>
@@ -4518,6 +4541,115 @@ function deleteLink(id){
   if(!isAdmin()){ alert('Only Admins can delete links.'); return; }
   if(!confirm('Delete this link?')) return;
   db.collection('links').doc(id).delete().catch(e=>alert('Delete failed: '+e.message));
+}
+
+/* ============================= PETTY CASH (Runner Ledger) ============================= */
+function renderPettyCash(){
+  const entries = (DB.pettyCash||[]).slice().sort((a,b)=>(a.date||'').localeCompare(b.date||'') || (a.createdAt||0)-(b.createdAt||0));
+  let totalAdvance = 0, totalExpense = 0;
+  entries.forEach(e=>{
+    if(e.type==='advance') totalAdvance += Number(e.amount)||0;
+    else totalExpense += Number(e.amount)||0;
+  });
+  const balance = totalAdvance - totalExpense;
+  const rowsHTML = entries.length ? entries.slice().reverse().map(e=>{
+    const vendor = e.vendorId ? (DB.vendors||[]).find(v=>v.id===e.vendorId) : null;
+    return `
+    <tr>
+      <td>${e.date? new Date(e.date).toLocaleDateString('en-IN') : '-'}</td>
+      <td>${e.type==='advance' ? '<span class="tag" style="background:var(--accent-light); color:var(--gold-dark);">Advance</span>' : '<span class="tag">Expense</span>'}</td>
+      <td>${escapeHTML(e.description||e.category||'')}</td>
+      <td>${vendor? escapeHTML(vendor.name) : '-'}</td>
+      <td class="mono" style="color:${e.type==='advance'?'#2E7D32':'var(--brick,#B14A3C)'};">${e.type==='advance'?'+':'-'}${fmtINR(e.amount)}</td>
+      <td>${escapeHTML(e.createdByName||'')}</td>
+      <td>${isAdmin()? `<button class="btn btn-danger btn-sm" onclick="deletePettyCashEntry('${e.id}')">Delete</button>` : ''}</td>
+    </tr>
+  `;}).join('') : `<tr><td colspan="7" style="text-align:center; color:var(--slate);">No entries yet.</td></tr>`;
+
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Petty Cash</h1>
+        <p class="page-sub">Track advances given and what was purchased with them.</p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        ${isAdmin()? `<button class="btn btn-ghost" onclick="openPettyCashModal('advance')">+ Add Advance</button>` : ''}
+        <button class="btn btn-primary" onclick="openPettyCashModal('expense')">+ Add Expense</button>
+      </div>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); margin-bottom:26px;">
+      <div class="card"><div class="card-body">
+        <div class="card-desc">Total Advances</div>
+        <div class="page-title mono" style="font-size:22px; color:#2E7D32;">${fmtINR(totalAdvance)}</div>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <div class="card-desc">Total Expenses</div>
+        <div class="page-title mono" style="font-size:22px; color:var(--brick,#B14A3C);">${fmtINR(totalExpense)}</div>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <div class="card-desc">Current Balance</div>
+        <div class="page-title mono" style="font-size:22px;">${fmtINR(balance)}</div>
+      </div></div>
+    </div>
+    <div class="panel" style="overflow:auto;">
+      <table style="width:100%;">
+        <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Vendor</th><th>Amount</th><th>Added By</th><th></th></tr></thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>
+  `;
+}
+function openPettyCashModal(type){
+  const vendorOptions = (DB.vendors||[]).map(v=>`<option value="${v.id}">${escapeHTML(v.name)}</option>`).join('');
+  showModal(`
+    <h2>${type==='advance' ? 'Add Advance' : 'Add Expense'}</h2>
+    <div class="field"><label>Date</label><input type="date" id="pc_date" value="${todayStr()}"></div>
+    <div class="field"><label>${type==='advance' ? 'Notes' : 'Description (what was purchased)'}</label><input type="text" id="pc_desc" placeholder="${type==='advance' ? 'e.g. Advance for sourcing' : 'e.g. Thread, Porter Gurgaon to Delhi'}"></div>
+    ${type==='expense' ? `
+      <div class="field"><label>Category</label>
+        <select id="pc_category">
+          <option value="Material">Material</option>
+          <option value="Transport">Transport</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Vendor (optional)</label>
+        <select id="pc_vendor"><option value="">-- None --</option>${vendorOptions}</select>
+      </div>
+    ` : ''}
+    <div class="field"><label>Amount ₹</label><input type="number" id="pc_amount" placeholder="0"></div>
+    <div class="form-error" id="pc_error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePettyCashEntry('${type}')">Save</button>
+    </div>
+  `);
+}
+function savePettyCashEntry(type){
+  const date = document.getElementById('pc_date').value;
+  const description = document.getElementById('pc_desc').value.trim();
+  const amount = Number(document.getElementById('pc_amount').value) || 0;
+  const errEl = document.getElementById('pc_error');
+  if(!date || amount <= 0){ errEl.textContent = 'Enter a valid date and amount.'; return; }
+  const data = {
+    type,
+    date,
+    amount,
+    description,
+    createdAt: Date.now(),
+    createdBy: currentUser.uid,
+    createdByName: (DB.users.find(u=>u.id===currentUser.uid)||{}).name || currentUser.email,
+  };
+  if(type==='expense'){
+    data.category = document.getElementById('pc_category').value;
+    const vendorId = document.getElementById('pc_vendor').value;
+    if(vendorId) data.vendorId = vendorId;
+  }
+  db.collection('pettyCash').add(data).then(()=>{ closeModal(); }).catch(e=>{ errEl.textContent = 'Error: ' + e.message; });
+}
+function deletePettyCashEntry(id){
+  if(!confirm('Delete this entry?')) return;
+  db.collection('pettyCash').doc(id).delete().catch(e=>alert('Delete failed: '+e.message));
 }
 
 function saveSettings(){
