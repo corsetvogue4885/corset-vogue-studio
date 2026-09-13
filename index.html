@@ -504,6 +504,7 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
 
 <div class="center-screen no-print" id="setupScreen" style="display:none;"></div>
 <div class="center-screen no-print" id="loginScreen" style="display:none;"></div>
+<div class="center-screen no-print" id="pendingScreen" style="display:none;"></div>
 <div class="center-screen no-print" id="loadingScreen" style="display:none;">
   <div style="text-align:center; color:#EDEBE3;">
     <div class="spinner"></div>
@@ -533,7 +534,7 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
     <div class="nav-item" data-page="newchallan"><span class="nav-icon-chip"><i class="ti ti-file-plus"></i></span><span class="nav-label">New Challan</span></div>
     <div class="nav-item" data-page="links"><span class="nav-icon-chip"><i class="ti ti-link"></i></span><span class="nav-label">Links</span></div>
     <div class="nav-item admin-only-nav" data-page="settings"><span class="nav-icon-chip"><i class="ti ti-settings"></i></span><span class="nav-label">Settings</span></div>
-    <div class="nav-item admin-only-nav" data-page="team"><span class="nav-icon-chip"><i class="ti ti-users-group"></i></span><span class="nav-label">Team</span></div>
+    <div class="nav-item admin-only-nav" data-page="team"><span class="nav-icon-chip"><i class="ti ti-users-group"></i></span><span class="nav-label">Team <span id="teamPendingBadge"></span></span></div>
     <div class="sidebar-search-wrap" style="padding:12px; border-top:1px solid var(--line); margin-top:8px;">
       <input type="text" id="globalSearch" placeholder="🔍 Search styles, invoices..." style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:12px; box-sizing:border-box;" onkeyup="performSearch(this.value)">
     </div>
@@ -726,14 +727,15 @@ let DB = {
   listings: [],
   listingAccounts: [],
   users: [],
-  links: []
+  links: [],
+  pendingUsers: []
 };
 let currentUser = null;
 let currentUserRole = 'admin'; // 'admin' or 'tailor' -- used by the separate tailor self-service portal, unrelated to staff roles below
 let currentTailorId = null;
 let listenersActive = false;
 let unsubscribers = [];
-let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false, users:false, links:false };
+let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false, users:false, links:false, pendingUsers:false };
 
 /* ---- Staff access control (Admin / Staff roles) ---- */
 let appRole = null;         // 'admin' | 'staff' | null (not yet known)
@@ -741,7 +743,7 @@ let appRoleReady = false;   // becomes true once we've read the ID token claims
 const ADMIN_ONLY_PAGES = ['settings','team'];
 
 function allLoaded(){
-  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts && loadedFlags.users && loadedFlags.links;
+  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts && loadedFlags.users && loadedFlags.links && loadedFlags.pendingUsers;
 }
 
 function attachListeners(){
@@ -828,6 +830,13 @@ function attachListeners(){
     afterSync();
     if(currentPage==='links') render();
   }, err=>{ console.error(err); loadedFlags.links = true; afterSync(); }));
+
+  unsubscribers.push(db.collection('pendingUsers').onSnapshot(snap=>{
+    DB.pendingUsers = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    loadedFlags.pendingUsers = true;
+    afterSync();
+    render();
+  }, err=>{ console.error(err); loadedFlags.pendingUsers = true; afterSync(); }));
 }
 function detachListeners(){
   unsubscribers.forEach(u=>{ try{ u(); }catch(e){} });
@@ -893,10 +902,47 @@ function showLoginScreen(error){
       <p style="margin-top:14px; font-size:12.5px; text-align:center;">
         <span style="cursor:pointer; text-decoration:underline; color:var(--gold-dark);" onclick="showForgotPasswordScreen()">Forgot password?</span>
       </p>
-      <p style="margin-top:10px; font-size:11.5px;">Need a new staff account? Ask the studio owner to add it from Firebase Console.</p>
+      <p style="margin-top:10px; font-size:11.5px; text-align:center;">
+        Need access? <span style="cursor:pointer; text-decoration:underline;" onclick="showSignupScreen()">Request an account</span>
+      </p>
     </div>
   `;
   document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
+}
+function showSignupScreen(message, isError){
+  const el = document.getElementById('loginScreen');
+  el.innerHTML = `
+    <div class="center-box">
+      <div class="center-stamp"><img src="${LOGO_DATA_URL}" alt="logo"></div>
+      <h2>Request Access</h2>
+      <p>Create your login. An Admin will need to approve it before you can use the app.</p>
+      <div class="field"><label>Name</label><input type="text" id="su_name" placeholder="Your name"></div>
+      <div class="field"><label>Email</label><input type="email" id="su_email" placeholder="you@studio.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="su_pass" placeholder="At least 6 characters"></div>
+      <div class="form-error" style="color:${isError?'var(--brick)':'var(--gold-dark)'};">${message||''}</div>
+      <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitSignupRequest()">Request Access</button>
+      <p style="margin-top:14px; font-size:12.5px; text-align:center;">
+        <span style="cursor:pointer; text-decoration:underline;" onclick="showLoginScreen()">← Back to Sign In</span>
+      </p>
+    </div>
+  `;
+}
+function submitSignupRequest(){
+  const name = document.getElementById('su_name').value.trim();
+  const email = document.getElementById('su_email').value.trim();
+  const pass = document.getElementById('su_pass').value;
+  if(!name || !email || !pass){ showSignupScreen('Fill in all fields.', true); return; }
+  if(pass.length < 6){ showSignupScreen('Password must be at least 6 characters.', true); return; }
+  showSignupScreen('Submitting...', false);
+  auth.createUserWithEmailAndPassword(email, pass).then(cred=>{
+    return db.collection('pendingUsers').doc(cred.user.uid).set({
+      name, email, requestedAt: Date.now(), status: 'pending'
+    }).then(()=> auth.signOut());
+  }).then(()=>{
+    showLoginScreen('Request submitted. You can sign in once an Admin approves your access.');
+  }).catch(err=>{
+    showSignupScreen('Error: ' + (err.message||'Could not submit request.'), true);
+  });
 }
 
 function showForgotPasswordScreen(message, isError){
@@ -946,9 +992,10 @@ if(!isFirebaseConfigured()){
       currentUser = user;
       appRoleReady = false;
       document.getElementById('loginScreen').style.display='none';
+      document.getElementById('pendingScreen').style.display='none';
       document.getElementById('loadingScreen').style.display='flex';
       refreshAppRole().then(()=>{
-        attachListeners();
+        if(!appRole) checkPendingOrBootstrap();
       });
       startAccessWatchdog();
     }else{
@@ -956,6 +1003,7 @@ if(!isFirebaseConfigured()){
       appRole = null;
       appRoleReady = false;
       stopAccessWatchdog();
+      document.getElementById('pendingScreen').style.display='none';
       if(currentUserRole==='tailor'){
         showLoginScreen();  // Show login for tailor signout
       }else{
@@ -973,6 +1021,10 @@ function refreshAppRole(forceTokenRefresh){
   return currentUser.getIdTokenResult(!!forceTokenRefresh).then(res=>{
     appRole = res.claims && res.claims.role ? res.claims.role : null;
     appRoleReady = true;
+    if(appRole){
+      document.getElementById('pendingScreen').style.display='none';
+      if(!listenersActive) attachListeners();
+    }
     render();
   }).catch(()=>{ appRoleReady = true; });
 }
@@ -995,12 +1047,51 @@ function stopAccessWatchdog(){
   if(accessWatchdogTimer){ clearInterval(accessWatchdogTimer); accessWatchdogTimer = null; }
 }
 function isAdmin(){ return appRole === 'admin'; }
+
+/* ---- Roleless account: figure out whether this is the very first
+   studio account (bootstrap) or a self-signed-up account waiting for an
+   Admin to approve it -- and show the matching screen, without ever
+   loading business data. ---- */
+function checkPendingOrBootstrap(){
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('appRoot').style.display='none';
+  db.collection('users').limit(1).get().then(snap=>{
+    if(snap.empty){ showBootstrapScreen(); } else { showPendingScreen(); }
+  }).catch(()=>{ showPendingScreen(); });
+}
+function showBootstrapScreen(){
+  const el = document.getElementById('pendingScreen');
+  el.style.display='flex';
+  el.innerHTML = `
+    <div class="center-box wide">
+      <div class="center-stamp"><img src="${LOGO_DATA_URL}" alt="logo"></div>
+      <h2>One-time setup</h2>
+      <p>You're signed in as <b>${escapeHTML(currentUser.email)}</b>. No Admin exists yet for this studio, so as the first account you can set yourself up as Admin.</p>
+      <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="bootstrapAsAdmin()">Make me Admin</button>
+      <div id="bootstrapScreenMsg" style="margin-top:10px; font-size:12.5px;"></div>
+      <p style="margin-top:16px; font-size:12.5px; text-align:center;"><span style="cursor:pointer; text-decoration:underline;" onclick="signOutUser()">Sign out</span></p>
+    </div>
+  `;
+}
 function bootstrapAsAdmin(){
-  const msgEl = document.getElementById('bootstrapMsg');
+  const msgEl = document.getElementById('bootstrapScreenMsg');
   if(msgEl) msgEl.textContent = 'Setting up...';
   functionsApi.httpsCallable('bootstrapFirstAdmin')({})
     .then(()=> refreshAppRole(true))
     .catch(err=>{ if(msgEl) msgEl.textContent = 'Error: ' + (err.message || 'An Admin already exists. Ask the existing Admin to set your role.'); });
+}
+function showPendingScreen(){
+  const el = document.getElementById('pendingScreen');
+  el.style.display='flex';
+  el.innerHTML = `
+    <div class="center-box">
+      <div class="center-stamp"><img src="${LOGO_DATA_URL}" alt="logo"></div>
+      <h2>Waiting for approval</h2>
+      <p>Your account (<b>${escapeHTML(currentUser.email)}</b>) has been created, but an Admin needs to approve your access before you can use the app.</p>
+      <p style="font-size:12.5px; color:var(--slate);">Please check back later, or contact your studio Admin.</p>
+      <button class="btn btn-ghost" style="width:100%; margin-top:10px;" onclick="signOutUser()">Sign Out</button>
+    </div>
+  `;
 }
 
 /* ============================= ROUTER ============================= */
@@ -1073,18 +1164,17 @@ function render(){
     }
   }
   document.querySelectorAll('.admin-only-nav').forEach(el=>{ el.style.display = isAdmin() ? '' : 'none'; });
+  const teamBadgeEl = document.getElementById('teamPendingBadge');
+  if(teamBadgeEl){
+    const pendingCount = (DB.pendingUsers||[]).length;
+    teamBadgeEl.textContent = pendingCount ? String(pendingCount) : '';
+    teamBadgeEl.style.cssText = pendingCount ? 'background:var(--brick); color:#fff; border-radius:99px; padding:1px 6px; font-size:10.5px; margin-left:4px;' : '';
+  }
   if(ADMIN_ONLY_PAGES.includes(currentPage) && appRoleReady && !isAdmin()){
     currentPage = 'dashboard';
   }
   const main = document.getElementById('main');
-  const bootstrapBanner = (appRoleReady && !appRole) ? `
-    <div class="panel" style="background:#FFF7E0; border:1px solid #E4A73B; margin-bottom:20px;">
-      <b>Setup pending:</b> Your account doesn't have a role (Admin/Staff) set yet.
-      If you're the first/owner account for this studio, click below to make yourself Admin.
-      <div style="margin-top:10px;"><button class="btn btn-primary" onclick="bootstrapAsAdmin()">Make me Admin</button></div>
-      <div id="bootstrapMsg" style="margin-top:8px; font-size:12.5px;"></div>
-    </div>` : '';
-  if(currentPage==='dashboard') main.innerHTML = bootstrapBanner + renderDashboard();
+  if(currentPage==='dashboard') main.innerHTML = renderDashboard();
   else if(currentPage==='styles') main.innerHTML = renderStyles();
   else if(currentPage==='listings') main.innerHTML = renderListingManager();
   else if(currentPage==='listingdetail') main.innerHTML = renderListingDetail(window._viewingListingId);
@@ -4152,7 +4242,7 @@ function renderTeam(){
       </td>
       <td>${u.active===false ? '<span style="color:var(--brick,#B14A3C); font-weight:600;">Disabled</span>' : '<span style="color:#2E7D32; font-weight:600;">Active</span>'}</td>
       <td style="white-space:nowrap;">
-        ${u.id===currentUser.uid ? '<span style="color:var(--slate); font-size:12px;">(Aap)</span>' : `
+        ${u.id===currentUser.uid ? '<span style="color:var(--slate); font-size:12px;">(You)</span>' : `
           <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${u.id}', ${u.active===false})">${u.active===false?'Activate':'Deactivate'}</button>
           <button class="btn btn-ghost btn-sm" onclick="openEditPhotoModal('${u.id}','${escapeHTML(u.photoUrl||'')}')">Photo</button>
           <button class="btn btn-ghost btn-sm" onclick="openResetPasswordModal('${u.id}','${escapeHTML(u.email||'')}')">Reset Password</button>
@@ -4162,6 +4252,35 @@ function renderTeam(){
     </tr>
   `).join('') : `<tr><td colspan="5" style="text-align:center; color:var(--slate);">No staff accounts yet.</td></tr>`;
 
+  const pending = DB.pendingUsers || [];
+  const pendingHTML = pending.length ? `
+    <div class="panel" style="margin-bottom:20px; border-color:var(--brick,#B14A3C); overflow:auto;">
+      <h3>Pending Requests (${pending.length})</h3>
+      <table style="width:100%;">
+        <thead><tr><th>Name</th><th>Email</th><th>Requested</th><th>Role</th><th>Action</th></tr></thead>
+        <tbody>
+          ${pending.map(p=>`
+            <tr>
+              <td>${escapeHTML(p.name||'')}</td>
+              <td>${escapeHTML(p.email||'')}</td>
+              <td>${p.requestedAt? new Date(p.requestedAt).toLocaleDateString('en-IN') : '-'}</td>
+              <td>
+                <select id="pending_role_${p.id}">
+                  <option value="staff" selected>Staff</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </td>
+              <td style="white-space:nowrap;">
+                <button class="btn btn-primary btn-sm" onclick="approvePendingUser('${p.id}')">Approve</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectPendingUser('${p.id}','${escapeHTML(p.email||'')}')">Reject</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  ` : '';
+
   return `
     <div class="page-header">
       <div>
@@ -4170,6 +4289,7 @@ function renderTeam(){
       </div>
       <button class="btn btn-primary" onclick="openAddUserModal()">+ Add Staff</button>
     </div>
+    ${pendingHTML}
     <div class="panel" style="overflow:auto;">
       <table style="width:100%;">
         <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
@@ -4188,6 +4308,17 @@ function renderTeam(){
   `;
 }
 
+function approvePendingUser(uid){
+  const sel = document.getElementById('pending_role_'+uid);
+  const role = sel ? sel.value : 'staff';
+  functionsApi.httpsCallable('approveUser')({ uid, role })
+    .catch(err=>alert('Error: ' + (err.message||'Could not approve.')));
+}
+function rejectPendingUser(uid, email){
+  if(!confirm(`Reject the access request from ${email}? This will delete their account.`)) return;
+  functionsApi.httpsCallable('rejectUser')({ uid })
+    .catch(err=>alert('Error: ' + (err.message||'Could not reject.')));
+}
 function openAddUserModal(){
   showModal(`
     <h2>Add Staff Member</h2>
