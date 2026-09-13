@@ -12,19 +12,22 @@
 :root{
   --ink:#1E293B;
   --ink-2:#334155;
-  --sidebar-bg: #FFFDFE;
-  --sidebar-active: #6E3482;
-  --sidebar-active-2: #8B4FA8;
-  --sidebar-text: #000000;
+  --sidebar-bg: linear-gradient(165deg, #4C0585 0%, #6B2FA0 55%, #8B4FA8 100%);
+  --sidebar-deep-purple: #4C0585;
+  --sidebar-lavender: #DBB5EE;
+  --sidebar-verylight: #FFFDFE;
+  --sidebar-active: #FFFDFE;
+  --sidebar-active-2: #FFFDFE;
+  --sidebar-text: #FFFDFE;
   --ivory:#F8F7FC;
   --paper:#FFFFFF;
   --gold:#7C3AED;
   --gold-dark:#6D28D9;
   --brick:#EC4899;
-  --slate:#64748B;
+  --slate:#475569;
   --charcoal:#0F172A;
-  --line:#E9D5FF;
-  --shadow: 0 4px 12px rgba(124,58,237,0.1);
+  --line:#1A1A1A;
+  --shadow: none;
   --accent-light:#F3E8FF;
   --accent-gradient: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
 }
@@ -38,6 +41,9 @@ a:hover{opacity:0.72;}
   background:#FFFFFF;
   min-height:100vh;
   display:flex;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
 }
 h1,h2,h3,.brand,.serif{font-family:'Fraunces',serif;}
 .mono{font-family:'JetBrains Mono',monospace;}
@@ -66,7 +72,7 @@ h1,h2,h3,.brand,.serif{font-family:'Fraunces',serif;}
   width:26px; height:26px; border-radius:8px; color:var(--sidebar-text);
   transition:background .2s ease, transform .3s ease; flex-shrink:0;
 }
-.sidebar-collapse-btn:hover{background:rgba(110,52,130,0.08);}
+.sidebar-collapse-btn:hover{background:rgba(255,253,254,0.14);}
 .sidebar.collapsed .sidebar-collapse-btn{transform:rotate(180deg);}
 .brand{
   font-size:19px;
@@ -79,10 +85,10 @@ h1,h2,h3,.brand,.serif{font-family:'Fraunces',serif;}
   gap:9px;
 }
 .brand img{width:30px; height:30px; border-radius:50%; object-fit:cover;}
-.brand span{color:var(--sidebar-active);}
+.brand span{color:var(--sidebar-lavender);}
 .brand-sub{
   font-size:10px;
-  color:#8B5FA3;
+  color:rgba(255,253,254,0.7);
   padding:0 8px 18px 8px;
   letter-spacing:0.5px;
   text-transform:uppercase;
@@ -101,8 +107,8 @@ h1,h2,h3,.brand,.serif{font-family:'Fraunces',serif;}
   transition:background .2s ease, color .2s ease, transform .2s ease;
   border-left:3px solid transparent;
 }
-.nav-item:hover{background:rgba(110,52,130,0.08); color:var(--sidebar-text); transform:translateX(3px);}
-.nav-item.active{background:linear-gradient(135deg, var(--sidebar-active), var(--sidebar-active-2)); color:#fff; border-left:3px solid #fff; box-shadow:0 3px 10px rgba(110,52,130,0.35);}
+.nav-item:hover{background:rgba(255,253,254,0.14); color:var(--sidebar-text); transform:translateX(3px);}
+.nav-item.active{background:var(--sidebar-active); color:var(--sidebar-deep-purple); border-left:3px solid var(--sidebar-deep-purple);}
 .nav-item.active:hover{transform:translateX(0);}
 .nav-icon{font-size:16px; width:18px; text-align:center; transition:transform .2s ease;}
 .nav-item:hover .nav-icon-chip{transform:scale(1.08);}
@@ -110,13 +116,13 @@ h1,h2,h3,.brand,.serif{font-family:'Fraunces',serif;}
   margin-top:auto;
   padding:10px;
   font-size:11px;
-  color:#8B6B99;
+  color:rgba(255,253,254,0.65);
   line-height:1.5;
-  border-top:1px solid rgba(110,52,130,0.18);
+  border-top:1px solid rgba(255,253,254,0.2);
   padding-top:14px;
 }
 .sidebar-user{font-size:12px; color:var(--sidebar-text); margin-bottom:6px; word-break:break-all;}
-.sidebar-signout{cursor:pointer; text-decoration:underline; color:var(--sidebar-active);}
+.sidebar-signout{cursor:pointer; text-decoration:underline; color:var(--sidebar-lavender);}
 
 /* ---------- Main ---------- */
 .main{
@@ -166,7 +172,7 @@ h1,h2,h3,.brand,.serif{font-family:'Fraunces',serif;}
   flex-direction:column;
   transition:box-shadow .2s, transform .2s;
 }
-.card:hover{box-shadow:0 8px 20px rgba(124,58,237,0.15); transform:translateY(-2px);}
+.card:hover{border-color:#000; transform:translateY(-2px);}
 .style-img{
   width:100%;
   height:200px;
@@ -442,12 +448,12 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
 .nav-icon-chip{
   display:inline-flex; align-items:center; justify-content:center;
   width:26px; height:26px; border-radius:8px; font-size:13px;
-  background:transparent; flex-shrink:0;
+  background:rgba(255,253,254,0.14); flex-shrink:0;
   transition:background .2s ease, transform .2s ease;
 }
-.nav-icon-chip i{font-size:17px; color:#000; display:inline-block; transition:color .2s ease;}
-.nav-item.active .nav-icon-chip{background:rgba(255,255,255,0.22);}
-.nav-item.active .nav-icon-chip i{color:#fff;}
+.nav-icon-chip i{font-size:17px; color:var(--sidebar-text); display:inline-block; transition:color .2s ease;}
+.nav-item.active .nav-icon-chip{background:var(--sidebar-lavender);}
+.nav-item.active .nav-icon-chip i{color:var(--sidebar-deep-purple);}
 
 /* Per-icon hover micro-animations -- each icon moves in a way that fits its meaning */
 @keyframes tiPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
@@ -536,7 +542,7 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
     <div class="nav-item" data-page="pettycash"><span class="nav-icon-chip"><i class="ti ti-cash"></i></span><span class="nav-label">Petty Cash</span></div>
     <div class="nav-item admin-only-nav" data-page="settings"><span class="nav-icon-chip"><i class="ti ti-settings"></i></span><span class="nav-label">Settings</span></div>
     <div class="nav-item admin-only-nav" data-page="team"><span class="nav-icon-chip"><i class="ti ti-users-group"></i></span><span class="nav-label">Team <span id="teamPendingBadge"></span></span></div>
-    <div class="sidebar-search-wrap" style="padding:12px; border-top:1px solid var(--line); margin-top:8px;">
+    <div class="sidebar-search-wrap" style="padding:12px; border-top:1px solid rgba(255,253,254,0.2); margin-top:8px;">
       <input type="text" id="globalSearch" placeholder="🔍 Search styles, invoices..." style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:12px; box-sizing:border-box;" onkeyup="performSearch(this.value)">
     </div>
     <div class="sidebar-footer sidebar-footer-details">
@@ -1170,7 +1176,7 @@ function render(){
           ${avatarHTML(displayName, myProfile && myProfile.photoUrl, 'sm')}
           <div style="min-width:0;">
             <div style="font-weight:600; font-size:12.5px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(displayName)}</div>
-            <div style="font-size:10.5px; color:#8B5FA3; text-transform:capitalize;">${escapeHTML(appRole||'')}</div>
+            <div style="font-size:10.5px; color:rgba(255,253,254,0.7); text-transform:capitalize;">${escapeHTML(appRole||'')}</div>
           </div>
         </div>`;
     } else {
@@ -1790,12 +1796,12 @@ function saveStyle(id){
   if(image2) data.image2 = image2;
   data.thumbnail = image1 || s.thumbnail || s.image || '';
   const ref = id ? db.collection('styles').doc(id) : db.collection('styles').doc();
-  ref.set(data, {merge:true}).catch(err=>alert('Save failed: '+err.message));
+  ref.set(data, {merge:true}).then(()=>showToast(id?'Style updated.':'Style added.')).catch(err=>showToast('Save failed: '+err.message,'error'));
   closeModal();
 }
 function deleteStyle(id){
   if(!confirm('Delete this style?')) return;
-  db.collection('styles').doc(id).delete().catch(err=>alert('Delete failed: '+err.message));
+  db.collection('styles').doc(id).delete().then(()=>showToast('Style deleted.')).catch(err=>showToast('Delete failed: '+err.message,'error'));
 }
 
 /* ============================= CLIENTS ============================= */
@@ -1899,12 +1905,12 @@ function saveClient(id){
     gstin: document.getElementById('f_gstin').value.trim()
   };
   const ref = id ? db.collection('clients').doc(id) : db.collection('clients').doc();
-  ref.set(data, {merge:true}).catch(err=>alert('Save failed: '+err.message));
+  ref.set(data, {merge:true}).then(()=>showToast(id?'Client updated.':'Client added.')).catch(err=>showToast('Save failed: '+err.message,'error'));
   closeModal();
 }
 function deleteClient(id){
   if(!confirm('Delete this client?')) return;
-  db.collection('clients').doc(id).delete().catch(err=>alert('Delete failed: '+err.message));
+  db.collection('clients').doc(id).delete().then(()=>showToast('Client deleted.')).catch(err=>showToast('Delete failed: '+err.message,'error'));
 }
 function viewClientDetail(id){
   window._viewingClientId = id;
@@ -2014,13 +2020,6 @@ function duplicateInvoice(invId){
   currentPage='newinvoice';
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active', el.dataset.page==='newinvoice'));
   render();
-}
-function deleteInvoice(invId){
-  if(!confirm('Delete this invoice? Please confirm.')) return;
-  db.collection('invoices').doc(invId).delete().then(()=>{
-    alert('Invoice deleted successfully.');
-    navigate('invoices');
-  }).catch(err=>alert('Delete failed: '+err.message));
 }
 function renderClientDetail(id){
   const c = DB.clients.find(x=>x.id===id);
@@ -2291,7 +2290,7 @@ function exportInvoicesExcel(){
 }
 function deleteInvoice(id){
   if(!confirm('Delete this invoice?')) return;
-  db.collection('invoices').doc(id).delete().catch(err=>alert('Delete failed: '+err.message));
+  db.collection('invoices').doc(id).delete().then(()=>{ showToast('Invoice deleted.'); navigate('invoices'); }).catch(err=>showToast('Delete failed: '+err.message,'error'));
 }
 function viewInvoice(id){
   window._viewingInvoiceId = id;
@@ -2773,9 +2772,10 @@ function finalizeInvoice(){
       .then(()=>{
         newInvoiceState = null;
         window._viewingInvoiceId = ref.id;
+        showToast('Invoice saved.');
         navigate('viewinvoice');
       })
-      .catch(err=>alert('Invoice save failed: '+err.message));
+      .catch(err=>showToast('Invoice save failed: '+err.message,'error'));
   }
 }
 
@@ -2996,12 +2996,12 @@ function saveOrder(){
   };
   if(st.editId){
     db.collection('orders').doc(st.editId).set(orderData, {merge:true})
-      .then(()=>{ newOrderState=null; navigate('orders'); })
-      .catch(err=>alert('Order update failed: '+err.message));
+      .then(()=>{ newOrderState=null; showToast('Order updated.'); navigate('orders'); })
+      .catch(err=>showToast('Order update failed: '+err.message,'error'));
   } else {
     db.collection('orders').add(orderData)
-      .then(()=>{ newOrderState=null; navigate('orders'); })
-      .catch(err=>alert('Order save failed: '+err.message));
+      .then(()=>{ newOrderState=null; showToast('Order added.'); navigate('orders'); })
+      .catch(err=>showToast('Order save failed: '+err.message,'error'));
   }
 }
 function editOrder(id){
@@ -3038,7 +3038,7 @@ function editOrder(id){
 }
 function deleteOrder(id){
   if(!confirm('Delete this order? If it has already been invoiced, the invoice will not be deleted.')) return;
-  db.collection('orders').doc(id).delete().catch(err=>alert('Delete failed: '+err.message));
+  db.collection('orders').doc(id).delete().then(()=>showToast('Order deleted.')).catch(err=>showToast('Delete failed: '+err.message,'error'));
 }
 
 let orderListFilters = { month:'', clientId:'', status:'pending' };
@@ -3488,11 +3488,11 @@ function saveChallan(){
   
   db.collection('challans').add(st)
     .then(()=>{
-      alert('Challan saved successfully!');
+      showToast('Challan saved.');
       navigate('challans');
       render();
     })
-    .catch(err=>alert('Save failed: '+err.message));
+    .catch(err=>showToast('Save failed: '+err.message,'error'));
 }
 
 function viewChallan(id){
@@ -3528,11 +3528,11 @@ function viewChallan(id){
 function markChallanReturned(id){
   db.collection('challans').doc(id).update({returned:true})
     .then(()=>{
-      alert('Challan marked as returned!');
+      showToast('Challan marked as returned.');
       closeModal();
       render();
     })
-    .catch(err=>alert('Update failed: '+err.message));
+    .catch(err=>showToast('Update failed: '+err.message,'error'));
 }
 
 function renderChallanView(id){
@@ -3766,10 +3766,10 @@ function deleteChallan(id){
   if(!confirm('Delete this challan?')) return;
   db.collection('challans').doc(id).delete()
     .then(()=>{
-      alert('Challan deleted successfully.');
+      showToast('Challan deleted.');
       render();
     })
-    .catch(err=>alert('Delete failed: '+err.message));
+    .catch(err=>showToast('Delete failed: '+err.message,'error'));
 }
 
 /* ============================= TAILOR DASHBOARD ============================= */
@@ -4142,8 +4142,8 @@ function renderCostingBuilder(){const st=newCostingState;if(!st)return startNewC
   <div class="field-row"><div class="panel" style="padding:16px"><h3>Labour</h3><div class="field-row"><div class="field"><label>Hours</label><input type="number" step="0.25" value="${st.labourHours||0}" onchange="updateCostingField('labourHours',this.value)"></div><div class="field"><label>Rate / Hour ₹</label><input type="number" step="0.01" value="${st.labourRate||0}" onchange="updateCostingField('labourRate',this.value)"></div></div><div class="summary-row total"><span>Labour</span><span>₹${money(labour)}</span></div></div><div class="panel" style="padding:16px"><h3>Other Costs</h3><div class="field-row"><div class="field"><label>Packaging ₹</label><input type="number" value="${st.packing||0}" onchange="updateCostingField('packing',this.value)"></div><div class="field"><label>Overhead ₹</label><input type="number" value="${st.overhead||0}" onchange="updateCostingField('overhead',this.value)"></div></div><div class="field-row"><div class="field"><label>Shipping ₹</label><input type="number" value="${st.shipping||0}" onchange="updateCostingField('shipping',this.value)"></div><div class="field"><label>Other ₹</label><input type="number" value="${st.other||0}" onchange="updateCostingField('other',this.value)"></div></div></div></div>
   <div class="panel" style="padding:18px;margin-top:18px"><h3>Final Cost & Selling Price</h3><div class="field-row"><div class="field"><label>Markup %</label><input type="number" step="0.1" value="${st.markup||0}" onchange="updateCostingField('markup',this.value)"></div><div class="field"><label>USD Rate</label><input type="number" step="0.01" value="${st.usdRate||83}" onchange="updateCostingField('usdRate',this.value)"></div></div><div class="summary-row"><span>Material / Service</span><span>₹${money(materialTotal)}</span></div><div class="summary-row"><span>Labour</span><span>₹${money(labour)}</span></div><div class="summary-row"><span>Other Costs</span><span>₹${money(extra)}</span></div><div class="summary-row total"><span>ACTUAL TOTAL COST</span><span>₹${money(total)}</span></div><div class="summary-row"><span>Markup (${Number(st.markup)||0}%)</span><span>₹${money(selling-total)}</span></div><div class="summary-row total"><span>SELLING PRICE</span><span>₹${money(selling)} / $${money(sellingUSD)}</span></div><div class="field" style="margin-top:12px"><label>Notes</label><textarea oninput="newCostingState.notes=this.value" placeholder="Supplier quality, fitting notes, special processing...">${escapeHTML(st.notes||'')}</textarea></div><label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" ${st.locked?'checked':''} onchange="newCostingState.locked=this.checked"> 🔒 Lock this costing after saving</label></div>`;
 }
-function saveCosting(){const st=newCostingState;if(!st.clientId){alert('Select a client.');return;}if(!st.styleName){alert('Enter a style or costing name.');return;}const client=DB.clients.find(c=>c.id===st.clientId);const materialTotal=st.items.reduce((a,it)=>a+costingItemTotal(it),0),labour=(Number(st.labourHours)||0)*(Number(st.labourRate)||0),extra=(Number(st.packing)||0)+(Number(st.overhead)||0)+(Number(st.shipping)||0)+(Number(st.other)||0),total=materialTotal+labour+extra,selling=total*(1+(Number(st.markup)||0)/100);const data={...st,clientName:client?.name||'',materialTotal,labourTotal:labour,otherTotal:extra,totalCost:total,sellingINR:selling,sellingUSD:selling/(Number(st.usdRate)||83),updatedAt:Date.now(),updatedBy:currentUser?.email||''};delete data.id;const ref=st.id?db.collection('costings').doc(st.id):db.collection('costings').doc();if(st.id)data.createdAt=st.createdAt||Date.now();else data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{newCostingState=null;navigate('costing');}).catch(e=>alert('Costing save failed: '+e.message));}
-function deleteCosting(id){if(!confirm('Delete this costing?'))return;db.collection('costings').doc(id).delete().catch(e=>alert('Delete failed: '+e.message));}
+function saveCosting(){const st=newCostingState;if(!st.clientId){alert('Select a client.');return;}if(!st.styleName){alert('Enter a style or costing name.');return;}const client=DB.clients.find(c=>c.id===st.clientId);const materialTotal=st.items.reduce((a,it)=>a+costingItemTotal(it),0),labour=(Number(st.labourHours)||0)*(Number(st.labourRate)||0),extra=(Number(st.packing)||0)+(Number(st.overhead)||0)+(Number(st.shipping)||0)+(Number(st.other)||0),total=materialTotal+labour+extra,selling=total*(1+(Number(st.markup)||0)/100);const data={...st,clientName:client?.name||'',materialTotal,labourTotal:labour,otherTotal:extra,totalCost:total,sellingINR:selling,sellingUSD:selling/(Number(st.usdRate)||83),updatedAt:Date.now(),updatedBy:currentUser?.email||''};delete data.id;const ref=st.id?db.collection('costings').doc(st.id):db.collection('costings').doc();if(st.id)data.createdAt=st.createdAt||Date.now();else data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{newCostingState=null;showToast(st.id?'Costing updated.':'Costing saved.');navigate('costing');}).catch(e=>showToast('Costing save failed: '+e.message,'error'));}
+function deleteCosting(id){if(!confirm('Delete this costing?'))return;db.collection('costings').doc(id).delete().then(()=>showToast('Costing deleted.')).catch(e=>showToast('Delete failed: '+e.message,'error'));}
 function renderCostingView(id){const c=DB.costings.find(x=>x.id===id);if(!c)return '<div class="empty-state">Costing not found</div>';const client=DB.clients.find(x=>x.id===c.clientId);return `<div class="page-header"><div><button class="btn btn-ghost btn-sm" onclick="navigate('costing')">← Costings</button><h1 class="page-title" style="margin-top:10px">${escapeHTML(c.styleName)}</h1><p class="page-sub">${escapeHTML(client?.name||c.clientName||'')}</p></div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="editCosting('${c.id}')">Edit</button><button class="btn btn-primary" onclick="printCosting('${c.id}')">Print / PDF</button></div></div><div id="costingPrintArea" class="panel" style="padding:20px"><div class="tag-row"><span class="tag">${escapeHTML(client?.name||c.clientName||'No Client')}</span>${c.locked?'<span class="tag">🔒 Locked</span>':''}</div>${c.image?`<div style="margin:16px 0;text-align:center"><img src="${c.image}" style="max-width:260px;max-height:320px;object-fit:contain;border:1px solid #ddd;border-radius:8px"></div>`:''}<table style="margin-top:16px"><thead><tr><th>Material / Service</th><th>Vendor</th><th>Qty</th><th>Wastage</th><th>Rate</th><th>Total</th></tr></thead><tbody>${(c.items||[]).map(it=>`<tr><td>${escapeHTML(it.material||'')}</td><td>${escapeHTML((DB.vendors.find(v=>v.id===it.vendorId)||{}).name||'-')}</td><td>${it.qty||0} ${escapeHTML(it.unit||'')}</td><td>${it.wastage||0}%</td><td>₹${money(it.rate)}</td><td>₹${money(costingItemTotal(it))}</td></tr>`).join('')}</tbody></table><div style="max-width:480px;margin:18px 0 0 auto"><div class="summary-row"><span>Material / Service</span><span>₹${money(c.materialTotal)}</span></div><div class="summary-row"><span>Labour</span><span>₹${money(c.labourTotal)}</span></div><div class="summary-row"><span>Other Costs</span><span>₹${money(c.otherTotal)}</span></div><div class="summary-row total"><span>Actual Cost</span><span>₹${money(c.totalCost)}</span></div><div class="summary-row"><span>Markup</span><span>${c.markup||0}%</span></div><div class="summary-row total"><span>Selling Price</span><span>₹${money(c.sellingINR)} / $${money(c.sellingUSD)}</span></div></div>${c.notes?`<div style="margin-top:20px"><b>Notes</b><p>${escapeHTML(c.notes)}</p></div>`:''}</div>`;}
 function printCosting(id){const c=DB.costings.find(x=>x.id===id);if(!c)return;const w=window.open('','_blank');w.document.write(`<html><head><title>Costing - ${escapeHTML(c.styleName)}</title><style>body{font-family:Arial;padding:30px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:left}.total{font-weight:bold}</style></head><body>${document.getElementById('costingPrintArea').innerHTML}</body></html>`);w.document.close();w.print();}
 
@@ -4151,13 +4151,13 @@ function printCosting(id){const c=DB.costings.find(x=>x.id===id);if(!c)return;co
 function renderVendors(){return `<div class="page-header"><div><h1 class="page-title">Vendors & Suppliers</h1><p class="page-sub">Material suppliers, dyers, printers and service providers with their rates</p></div><button class="btn btn-primary" onclick="openVendorModal()">+ Add Vendor</button></div><div class="grid">${DB.vendors.map(v=>`<div class="card"><div class="card-body"><div class="tag-row"><span class="tag">${escapeHTML(v.type||'Material Supplier')}</span></div><h3 class="card-title">${escapeHTML(v.name)}</h3><div style="font-size:12px;color:var(--slate);margin-bottom:8px">${escapeHTML(v.contactPerson||'')}${v.phone?' · '+escapeHTML(v.phone):''}</div><div style="font-size:12px;margin-bottom:10px"><b>${(v.materials||[]).length}</b> materials · <b>${(v.services||[]).length}</b> services</div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="viewVendor('${v.id}')">View Rates</button><button class="btn btn-ghost btn-sm" onclick="openVendorModal('${v.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteVendor('${v.id}')">Delete</button></div></div></div>`).join('')}</div>${!DB.vendors.length?'<div class="empty-state"><div class="big">◉</div>No vendors yet. Add fabric, trim and processing suppliers.</div>':''}`;}
 function openVendorModal(id){const v=id?DB.vendors.find(x=>x.id===id):{id:null,name:'',type:'Material Supplier',contactPerson:'',phone:'',email:'',address:'',gst:'',paymentTerms:'',leadTime:'',notes:'',materials:[],services:[]};window._vendorEdit=JSON.parse(JSON.stringify(v));renderVendorModal();}
 function renderVendorModal(){const v=window._vendorEdit;showModal(`<h2>${v.id?'Edit':'Add'} Vendor</h2><div class="field-row"><div class="field"><label>Vendor Name</label><input id="vm_name" value="${escapeHTML(v.name)}"></div><div class="field"><label>Type</label><select id="vm_type"><option ${v.type==='Material Supplier'?'selected':''}>Material Supplier</option><option ${v.type==='Service Provider'?'selected':''}>Service Provider</option><option ${v.type==='Both'?'selected':''}>Both</option></select></div></div><div class="field-row"><div class="field"><label>Contact Person</label><input id="vm_contact" value="${escapeHTML(v.contactPerson||'')}"></div><div class="field"><label>Phone / WhatsApp</label><input id="vm_phone" value="${escapeHTML(v.phone||'')}"></div></div><div class="field-row"><div class="field"><label>Email</label><input id="vm_email" value="${escapeHTML(v.email||'')}"></div><div class="field"><label>GST</label><input id="vm_gst" value="${escapeHTML(v.gst||'')}"></div></div><div class="field"><label>Address</label><textarea id="vm_address">${escapeHTML(v.address||'')}</textarea></div><div class="field-row"><div class="field"><label>Payment Terms</label><input id="vm_payment" value="${escapeHTML(v.paymentTerms||'')}" placeholder="Advance / 30 days"></div><div class="field"><label>Lead Time</label><input id="vm_lead" value="${escapeHTML(v.leadTime||'')}" placeholder="3-5 days"></div></div><div class="field"><label>Notes</label><textarea id="vm_notes">${escapeHTML(v.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorModal()">Save Vendor</button></div>`);}
-function saveVendorModal(){const v=window._vendorEdit;const isNew=!v.id;const data={...v,name:document.getElementById('vm_name').value.trim(),type:document.getElementById('vm_type').value,contactPerson:document.getElementById('vm_contact').value.trim(),phone:document.getElementById('vm_phone').value.trim(),email:document.getElementById('vm_email').value.trim(),gst:document.getElementById('vm_gst').value.trim(),address:document.getElementById('vm_address').value.trim(),paymentTerms:document.getElementById('vm_payment').value.trim(),leadTime:document.getElementById('vm_lead').value.trim(),notes:document.getElementById('vm_notes').value.trim(),materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(!data.name){alert('Enter the vendor name.');return;}const ref=v.id?db.collection('vendors').doc(v.id):db.collection('vendors').doc();if(!v.id)data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{closeModal(); if(isNew){ viewVendor(ref.id); } else { render(); } }).catch(e=>alert('Vendor save failed: '+e.message));}
+function saveVendorModal(){const v=window._vendorEdit;const isNew=!v.id;const data={...v,name:document.getElementById('vm_name').value.trim(),type:document.getElementById('vm_type').value,contactPerson:document.getElementById('vm_contact').value.trim(),phone:document.getElementById('vm_phone').value.trim(),email:document.getElementById('vm_email').value.trim(),gst:document.getElementById('vm_gst').value.trim(),address:document.getElementById('vm_address').value.trim(),paymentTerms:document.getElementById('vm_payment').value.trim(),leadTime:document.getElementById('vm_lead').value.trim(),notes:document.getElementById('vm_notes').value.trim(),materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(!data.name){alert('Enter the vendor name.');return;}const ref=v.id?db.collection('vendors').doc(v.id):db.collection('vendors').doc();if(!v.id)data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{closeModal(); showToast(isNew?'Vendor added.':'Vendor updated.'); if(isNew){ viewVendor(ref.id); } else { render(); } }).catch(e=>showToast('Vendor save failed: '+e.message,'error'));}
 function viewVendor(id){window._viewingVendorId=id;navigate('vendordetail');}
 function renderVendorDetail(id){const v=DB.vendors.find(x=>x.id===id);if(!v)return '<div class="empty-state">Vendor not found</div>';return `<div class="page-header"><div><button class="btn btn-ghost btn-sm" onclick="navigate('vendors')">← Vendors</button><h1 class="page-title" style="margin-top:10px">${escapeHTML(v.name)}</h1><p class="page-sub">${escapeHTML(v.type||'')}</p></div><button class="btn btn-primary" onclick="openVendorRateModal('${v.id}')">+ Add Material / Service Rate</button></div><div class="field-row"><div class="panel" style="padding:16px"><h3>Vendor Details</h3><p>${escapeHTML(v.contactPerson||'')}</p><p>${escapeHTML(v.phone||'')}</p><p>${escapeHTML(v.email||'')}</p><p>${escapeHTML(v.address||'')}</p><p>Payment: ${escapeHTML(v.paymentTerms||'-')} · Lead: ${escapeHTML(v.leadTime||'-')}</p></div><div class="panel" style="padding:16px"><h3>Notes</h3><p>${escapeHTML(v.notes||'-')}</p></div></div><div class="panel" style="padding:16px;margin-top:18px;overflow:auto"><h3>Material Rates</h3>${(v.materials||[]).length?`<table><thead><tr><th>Material</th><th>Quality / Spec</th><th>Unit</th><th>Rate ₹</th><th>MOQ</th><th>Preferred</th><th></th></tr></thead><tbody>${v.materials.map((m,i)=>`<tr><td><b>${escapeHTML(m.name)}</b></td><td>${escapeHTML(m.quality||'')}</td><td>${escapeHTML(m.unit||'')}</td><td>₹${money(m.rate)}</td><td>${escapeHTML(m.moq||'-')}</td><td>${m.preferred?'⭐':''}</td><td><button class="btn btn-ghost btn-sm" onclick="openVendorRateModal('${v.id}','material',${i})">Edit</button><button class="btn btn-ghost btn-sm" onclick="viewVendorRateHistory('${v.id}','material',${i})">History${m.priceHistory&&m.priceHistory.length?' ('+m.priceHistory.length+')':''}</button><button class="btn btn-danger btn-sm" onclick="deleteVendorRate('${v.id}','material',${i})">Delete</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state" style="padding:25px">No material rates added.</div>'}</div><div class="panel" style="padding:16px;margin-top:18px;overflow:auto"><h3>Service Rates</h3>${(v.services||[]).length?`<table><thead><tr><th>Service</th><th>Material / Spec</th><th>Unit</th><th>Rate ₹</th><th>MOQ</th><th></th></tr></thead><tbody>${v.services.map((m,i)=>`<tr><td><b>${escapeHTML(m.name)}</b></td><td>${escapeHTML(m.quality||'')}</td><td>${escapeHTML(m.unit||'')}</td><td>₹${money(m.rate)}</td><td>${escapeHTML(m.moq||'-')}</td><td><button class="btn btn-ghost btn-sm" onclick="openVendorRateModal('${v.id}','service',${i})">Edit</button><button class="btn btn-ghost btn-sm" onclick="viewVendorRateHistory('${v.id}','service',${i})">History${m.priceHistory&&m.priceHistory.length?' ('+m.priceHistory.length+')':''}</button><button class="btn btn-danger btn-sm" onclick="deleteVendorRate('${v.id}','service',${i})">Delete</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state" style="padding:25px">No service rates added.</div>'}</div>`;}
 function openVendorRateModal(vendorId,type='material',index=null){const v=DB.vendors.find(x=>x.id===vendorId);const arr=type==='service'?(v.services||[]):(v.materials||[]);const r=index!==null?arr[index]:{name:'',quality:'',unit:'meter',rate:0,moq:'',preferred:false,notes:'',priceHistory:[]};window._vendorRateState={vendorId,type,index,data:JSON.parse(JSON.stringify(r))};const d=window._vendorRateState.data;const historyHTML=(d.priceHistory&&d.priceHistory.length)?`<div class="field"><label>Price History</label><div style="font-size:12px; color:var(--slate); border:1px solid var(--line); border-radius:8px; padding:8px 10px; max-height:120px; overflow:auto;">${d.priceHistory.slice().reverse().map(h=>`<div style="padding:3px 0; border-bottom:1px solid var(--line);">₹${h.rate} <span style="opacity:0.7;">— effective until ${new Date(h.date).toLocaleDateString('en-IN')}</span></div>`).join('')}</div></div>`:'';showModal(`<h2>${index!==null?'Edit':'Add'} ${type==='service'?'Service':'Material'} Rate</h2><div class="field"><label>${type==='service'?'Service Name':'Material Name'}</label><input id="vr_name" value="${escapeHTML(d.name||'')}" placeholder="${type==='service'?'Fabric Printing / Dyeing':'Black Satin'}"></div><div class="field"><label>Quality / Specification</label><input id="vr_quality" value="${escapeHTML(d.quality||'')}" placeholder="120 GSM / Digital Print"></div><div class="field-row"><div class="field"><label>Unit</label><select id="vr_unit">${['meter','yard','kg','gram','liter','piece','pair','dozen','hour','job'].map(u=>`<option ${d.unit===u?'selected':''}>${u}</option>`).join('')}</select></div><div class="field"><label>Rate ₹</label><input type="number" id="vr_rate" value="${d.rate||0}"></div></div><div class="field"><label>MOQ</label><input id="vr_moq" value="${escapeHTML(d.moq||'')}" placeholder="50 meter"></div>${type==='material'?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="vr_pref" '+(d.preferred?'checked':'')+'> Preferred vendor for this material</label>':''}<div class="field"><label>Notes</label><textarea id="vr_notes">${escapeHTML(d.notes||'')}</textarea></div>${historyHTML}<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorRate()">Save Rate</button></div>`);}
-function saveVendorRate(){const st=window._vendorRateState,v=DB.vendors.find(x=>x.id===st.vendorId);const d=st.data;const newRate=Number(document.getElementById('vr_rate').value)||0;const oldRate=d.rate||0;const oldUpdatedAt=d.updatedAt;d.name=document.getElementById('vr_name').value.trim();d.quality=document.getElementById('vr_quality').value.trim();d.unit=document.getElementById('vr_unit').value;d.moq=document.getElementById('vr_moq').value.trim();d.notes=document.getElementById('vr_notes').value.trim();d.preferred=document.getElementById('vr_pref')?.checked||false;d.priceHistory=d.priceHistory||[];if(!d.name){alert('Enter a name.');return;}if(st.index!==null && newRate!==oldRate){d.priceHistory.push({rate:oldRate, date:oldUpdatedAt||Date.now()});}d.rate=newRate;d.updatedAt=Date.now();const arr=st.type==='service'?(v.services||[]):(v.materials||[]);if(st.index===null)arr.push(d);else arr[st.index]=d;const data={...v,materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(st.type==='service')data.services=arr;else data.materials=arr;db.collection('vendors').doc(v.id).set(data,{merge:true}).then(()=>{closeModal();render();}).catch(e=>alert('Rate save failed: '+e.message));}
+function saveVendorRate(){const st=window._vendorRateState,v=DB.vendors.find(x=>x.id===st.vendorId);const d=st.data;const newRate=Number(document.getElementById('vr_rate').value)||0;const oldRate=d.rate||0;const oldUpdatedAt=d.updatedAt;d.name=document.getElementById('vr_name').value.trim();d.quality=document.getElementById('vr_quality').value.trim();d.unit=document.getElementById('vr_unit').value;d.moq=document.getElementById('vr_moq').value.trim();d.notes=document.getElementById('vr_notes').value.trim();d.preferred=document.getElementById('vr_pref')?.checked||false;d.priceHistory=d.priceHistory||[];if(!d.name){alert('Enter a name.');return;}if(st.index!==null && newRate!==oldRate){d.priceHistory.push({rate:oldRate, date:oldUpdatedAt||Date.now()});}d.rate=newRate;d.updatedAt=Date.now();const arr=st.type==='service'?(v.services||[]):(v.materials||[]);if(st.index===null)arr.push(d);else arr[st.index]=d;const data={...v,materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(st.type==='service')data.services=arr;else data.materials=arr;db.collection('vendors').doc(v.id).set(data,{merge:true}).then(()=>{closeModal(); showToast('Rate saved.'); render();}).catch(e=>showToast('Rate save failed: '+e.message,'error'));}
 function viewVendorRateHistory(vendorId,type,index){const v=DB.vendors.find(x=>x.id===vendorId);const arr=type==='service'?(v.services||[]):(v.materials||[]);const d=arr[index];const rows=(d.priceHistory||[]).slice().reverse();showModal(`<h2>Price History — ${escapeHTML(d.name)}</h2><div style="font-size:13px;"><div style="padding:8px 0; border-bottom:2px solid var(--line); font-weight:600;">Current: ₹${d.rate} <span style="font-weight:400; color:var(--slate);">(since ${d.updatedAt?new Date(d.updatedAt).toLocaleDateString('en-IN'):'—'})</span></div>${rows.length?rows.map(h=>`<div style="padding:8px 0; border-bottom:1px solid var(--line); color:var(--slate);">₹${h.rate} <span style="font-size:12px;">— effective until ${new Date(h.date).toLocaleDateString('en-IN')}</span></div>`).join(''):'<div style="padding:8px 0; color:var(--slate);">No earlier price changes recorded.</div>'}</div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Close</button></div>`);}
-function deleteVendorRate(vendorId,type,index){if(!confirm('Delete this rate?'))return;const v=DB.vendors.find(x=>x.id===vendorId);const arr=(type==='service'?(v.services||[]):(v.materials||[])).slice();arr.splice(index,1);const data=type==='service'?{services:arr,updatedAt:Date.now()}:{materials:arr,updatedAt:Date.now()};db.collection('vendors').doc(vendorId).set(data,{merge:true}).catch(e=>alert('Delete failed: '+e.message));}
+function deleteVendorRate(vendorId,type,index){if(!confirm('Delete this rate?'))return;const v=DB.vendors.find(x=>x.id===vendorId);const arr=(type==='service'?(v.services||[]):(v.materials||[])).slice();arr.splice(index,1);const data=type==='service'?{services:arr,updatedAt:Date.now()}:{materials:arr,updatedAt:Date.now()};db.collection('vendors').doc(vendorId).set(data,{merge:true}).then(()=>showToast('Rate deleted.')).catch(e=>showToast('Delete failed: '+e.message,'error'));}
 
 function renderSettings(){
   const s = DB.settings;
@@ -4334,12 +4334,14 @@ function approvePendingUser(uid){
   const sel = document.getElementById('pending_role_'+uid);
   const role = sel ? sel.value : 'staff';
   functionsApi.httpsCallable('approveUser')({ uid, role })
-    .catch(err=>alert('Error: ' + (err.message||'Could not approve.')));
+    .then(()=>showToast('User approved.'))
+    .catch(err=>showToast('Error: ' + (err.message||'Could not approve.'),'error'));
 }
 function rejectPendingUser(uid, email){
   if(!confirm(`Reject the access request from ${email}? This will delete their account.`)) return;
   functionsApi.httpsCallable('rejectUser')({ uid })
-    .catch(err=>alert('Error: ' + (err.message||'Could not reject.')));
+    .then(()=>showToast('Request rejected.'))
+    .catch(err=>showToast('Error: ' + (err.message||'Could not reject.'),'error'));
 }
 function openAddUserModal(){
   showModal(`
@@ -4367,12 +4369,12 @@ function submitAddUser(){
   const password = document.getElementById('nu_pass').value;
   const role = document.getElementById('nu_role').value;
   const errEl = document.getElementById('nu_error');
-  if(!name || !email || !password){ errEl.textContent = 'Sab fields bharein.'; return; }
-  if(password.length < 6){ errEl.textContent = 'Password kam se kam 6 characters ka ho.'; return; }
+  if(!name || !email || !password){ errEl.textContent = 'Fill in all fields.'; return; }
+  if(password.length < 6){ errEl.textContent = 'Password must be at least 6 characters.'; return; }
   errEl.textContent = 'Adding...';
   functionsApi.httpsCallable('createStaffUser')({ name, email, password, role, photoUrl })
-    .then(()=>{ closeModal(); })
-    .catch(err=>{ errEl.textContent = 'Error: ' + (err.message || 'Kuch galat hua.'); });
+    .then(()=>{ closeModal(); showToast('Staff added.'); })
+    .catch(err=>{ errEl.textContent = 'Error: ' + (err.message || 'Something went wrong.'); });
 }
 function openEditPhotoModal(uid, currentUrl){
   showModal(`
@@ -4386,21 +4388,24 @@ function openEditPhotoModal(uid, currentUrl){
 function submitEditPhoto(uid){
   const url = document.getElementById('ep_url').value.trim();
   db.collection('users').doc(uid).update({ photoUrl: url })
-    .then(()=>closeModal())
+    .then(()=>{ closeModal(); showToast('Photo updated.'); })
     .catch(err=>{ document.getElementById('ep_error').textContent = 'Error: ' + err.message; });
 }
 function changeUserRole(uid, role){
   functionsApi.httpsCallable('setUserRole')({ uid, role })
-    .catch(err=>alert('Error: ' + (err.message||'Could not change role.')));
+    .then(()=>showToast('Role updated.'))
+    .catch(err=>showToast('Error: ' + (err.message||'Could not change role.'),'error'));
 }
 function toggleUserActive(uid, makeActive){
   functionsApi.httpsCallable('setUserActive')({ uid, active: makeActive })
-    .catch(err=>alert('Error: ' + (err.message||'Could not change status.')));
+    .then(()=>showToast(makeActive?'Account activated.':'Account deactivated.'))
+    .catch(err=>showToast('Error: ' + (err.message||'Could not change status.'),'error'));
 }
 function removeUserPrompt(uid, email){
   if(!confirm(`Permanently delete ${email}'s account? This cannot be undone.`)) return;
   functionsApi.httpsCallable('deleteStaffUser')({ uid })
-    .catch(err=>alert('Error: ' + (err.message||'Could not delete.')));
+    .then(()=>showToast('Account removed.'))
+    .catch(err=>showToast('Error: ' + (err.message||'Could not delete.'),'error'));
 }
 
 function openResetPasswordModal(uid, email){
@@ -4419,7 +4424,7 @@ function submitResetPassword(uid){
   if(!pass || pass.length < 6){ errEl.textContent = 'Password must be at least 6 characters.'; return; }
   errEl.textContent = 'Resetting...';
   functionsApi.httpsCallable('adminResetPassword')({ uid, newPassword: pass })
-    .then(()=>{ closeModal(); alert('Password reset. Share the new password with the staff member.'); })
+    .then(()=>{ closeModal(); showToast('Password reset. Share the new password with the staff member.'); })
     .catch(err=>{ errEl.textContent = 'Error: ' + (err.message || 'Could not reset.'); });
 }
 
@@ -4446,7 +4451,7 @@ function submitChangePassword(){
   const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
   currentUser.reauthenticateWithCredential(cred)
     .then(()=> currentUser.updatePassword(newPass))
-    .then(()=>{ closeModal(); alert('Password updated.'); })
+    .then(()=>{ closeModal(); showToast('Password updated.'); })
     .catch(err=>{ errEl.textContent = 'Error: ' + (err.code==='auth/wrong-password' ? 'Current password is incorrect.' : (err.message||'Could not update.')); });
 }
 
@@ -4535,12 +4540,12 @@ function saveLink(){
   const data = { title, url, category, notes, updatedAt: Date.now() };
   const ref = l.id ? db.collection('links').doc(l.id) : db.collection('links').doc();
   if(!l.id){ data.createdAt = Date.now(); data.createdBy = currentUser.uid; }
-  ref.set(data, {merge:true}).then(()=>{ closeModal(); render(); }).catch(e=>{ errEl.textContent = 'Error: ' + e.message; });
+  ref.set(data, {merge:true}).then(()=>{ closeModal(); showToast(l.id?'Link updated.':'Link added.'); render(); }).catch(e=>{ errEl.textContent = 'Error: ' + e.message; });
 }
 function deleteLink(id){
-  if(!isAdmin()){ alert('Only Admins can delete links.'); return; }
+  if(!isAdmin()){ showToast('Only Admins can delete links.','error'); return; }
   if(!confirm('Delete this link?')) return;
-  db.collection('links').doc(id).delete().catch(e=>alert('Delete failed: '+e.message));
+  db.collection('links').doc(id).delete().then(()=>showToast('Link deleted.')).catch(e=>showToast('Delete failed: '+e.message,'error'));
 }
 
 /* ============================= PETTY CASH (Runner Ledger) ============================= */
@@ -4558,7 +4563,7 @@ function renderPettyCash(){
     <tr>
       <td>${e.date? new Date(e.date).toLocaleDateString('en-IN') : '-'}</td>
       <td>${e.type==='advance' ? '<span class="tag" style="background:var(--accent-light); color:var(--gold-dark);">Advance</span>' : '<span class="tag">Expense</span>'}</td>
-      <td>${escapeHTML(e.description||e.category||'')}</td>
+      <td>${escapeHTML(e.description||e.category||'')}${e.notes? `<div style="font-size:11px; color:var(--slate);">${escapeHTML(e.notes)}</div>` : ''}</td>
       <td>${vendor? escapeHTML(vendor.name) : '-'}</td>
       <td class="mono" style="color:${e.type==='advance'?'#2E7D32':'var(--brick,#B14A3C)'};">${e.type==='advance'?'+':'-'}${fmtINR(e.amount)}</td>
       <td>${escapeHTML(e.createdByName||'')}</td>
@@ -4618,6 +4623,7 @@ function openPettyCashModal(type){
       </div>
     ` : ''}
     <div class="field"><label>Amount ₹</label><input type="number" id="pc_amount" placeholder="0"></div>
+    <div class="field"><label>Notes (optional)</label><textarea id="pc_notes" placeholder="Any extra details"></textarea></div>
     <div class="form-error" id="pc_error"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -4629,6 +4635,7 @@ function savePettyCashEntry(type){
   const date = document.getElementById('pc_date').value;
   const description = document.getElementById('pc_desc').value.trim();
   const amount = Number(document.getElementById('pc_amount').value) || 0;
+  const notes = document.getElementById('pc_notes').value.trim();
   const errEl = document.getElementById('pc_error');
   if(!date || amount <= 0){ errEl.textContent = 'Enter a valid date and amount.'; return; }
   const data = {
@@ -4636,6 +4643,7 @@ function savePettyCashEntry(type){
     date,
     amount,
     description,
+    notes,
     createdAt: Date.now(),
     createdBy: currentUser.uid,
     createdByName: (DB.users.find(u=>u.id===currentUser.uid)||{}).name || currentUser.email,
@@ -4645,11 +4653,22 @@ function savePettyCashEntry(type){
     const vendorId = document.getElementById('pc_vendor').value;
     if(vendorId) data.vendorId = vendorId;
   }
-  db.collection('pettyCash').add(data).then(()=>{ closeModal(); }).catch(e=>{ errEl.textContent = 'Error: ' + e.message; });
+  db.collection('pettyCash').add(data).then(()=>{ closeModal(); showToast(type==='advance'?'Advance added.':'Expense added.'); }).catch(e=>{ errEl.textContent = 'Error: ' + e.message; });
 }
 function deletePettyCashEntry(id){
-  if(!confirm('Delete this entry?')) return;
-  db.collection('pettyCash').doc(id).delete().catch(e=>alert('Delete failed: '+e.message));
+  showModal(`
+    <h2>Delete this entry?</h2>
+    <p>This cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDeletePettyCashEntry('${id}')">Delete</button>
+    </div>
+  `);
+}
+function confirmDeletePettyCashEntry(id){
+  db.collection('pettyCash').doc(id).delete()
+    .then(()=>{ closeModal(); showToast('Entry deleted.'); })
+    .catch(e=>showToast('Delete failed: '+e.message,'error'));
 }
 
 function saveSettings(){
@@ -4671,8 +4690,8 @@ function saveSettings(){
     lutDetails: document.getElementById('s_lutdetails').value.trim()
   };
   db.collection('meta').doc('settings').set(data, {merge:true})
-    .then(()=>alert('Settings saved!'))
-    .catch(err=>alert('Save failed: '+err.message));
+    .then(()=>showToast('Settings saved.'))
+    .catch(err=>showToast('Save failed: '+err.message,'error'));
 }
 function showAddTailorForm(){
   document.getElementById('addTailorForm').style.display='block';
@@ -4750,10 +4769,10 @@ function deleteVendor(id){
   if(!confirm('Delete this vendor?')) return;
   db.collection('vendors').doc(id).delete()
     .then(()=>{
-      alert('Vendor deleted successfully.');
+      showToast('Vendor deleted.');
       render();
     })
-    .catch(err=>alert('Delete failed: '+err.message));
+    .catch(err=>showToast('Delete failed: '+err.message,'error'));
 }
 function exportData(){
   const blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'});
@@ -4766,6 +4785,31 @@ function exportData(){
 }
 
 /* ============================= MODAL HELPERS ============================= */
+/* ---- Toast notifications: small auto-dismissing confirmations, used
+   instead of intrusive alert() boxes for routine add/edit/delete success. ---- */
+function showToast(message, type){
+  type = type || 'success';
+  let host = document.getElementById('toastHost');
+  if(!host){
+    host = document.createElement('div');
+    host.id = 'toastHost';
+    host.style.cssText = 'position:fixed; top:16px; right:16px; z-index:9999; display:flex; flex-direction:column; gap:8px; align-items:flex-end;';
+    document.body.appendChild(host);
+  }
+  const el = document.createElement('div');
+  const bg = type==='error' ? '#FEE2E2' : '#DCFCE7';
+  const fg = type==='error' ? '#991B1B' : '#166534';
+  const icon = type==='error' ? '&#10005;' : '&#10003;';
+  el.style.cssText = `background:${bg}; color:${fg}; padding:10px 16px; border-radius:8px; font-size:13px; font-weight:600; box-shadow:0 4px 14px rgba(0,0,0,0.15); display:flex; align-items:center; gap:8px; opacity:0; transform:translateX(20px); transition:opacity .25s ease, transform .25s ease; max-width:320px;`;
+  el.innerHTML = `<span>${icon}</span><span>${escapeHTML(message)}</span>`;
+  host.appendChild(el);
+  requestAnimationFrame(()=>{ el.style.opacity='1'; el.style.transform='translateX(0)'; });
+  setTimeout(()=>{
+    el.style.opacity='0'; el.style.transform='translateX(20px)';
+    setTimeout(()=>el.remove(), 250);
+  }, 2600);
+}
+
 function showModal(html){
   document.getElementById('modalBox').innerHTML = html;
   document.getElementById('overlay').classList.add('show');
