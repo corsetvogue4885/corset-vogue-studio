@@ -415,6 +415,7 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
     <div class="brand-sub">Style &amp; Invoice Book</div>
     <div class="nav-item active" data-page="dashboard"><span class="nav-icon">&#9670;</span> Dashboard</div>
     <div class="nav-item" data-page="styles"><span class="nav-icon">&#10022;</span> Styles</div>
+    <div class="nav-item" data-page="listings"><span class="nav-icon">&#9776;</span> Listing Manager</div>
     <div class="nav-item" data-page="costing"><span class="nav-icon">&#8377;</span> Costing</div>
     <div class="nav-item" data-page="vendors"><span class="nav-icon">&#9881;</span> Vendors</div>
     <div class="nav-item" data-page="catalog"><span class="nav-icon">&#128218;</span> Catalog</div>
@@ -586,23 +587,25 @@ let DB = {
   tailors: [],
   challans: [],
   vendors: [],
-  costings: []
+  costings: [],
+  listings: [],
+  listingAccounts: []
 };
 let currentUser = null;
 let currentUserRole = 'admin'; // 'admin' or 'tailor'
 let currentTailorId = null;
 let listenersActive = false;
 let unsubscribers = [];
-let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false };
+let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false };
 
 function allLoaded(){
-  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings;
+  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts;
 }
 
 function attachListeners(){
   if(listenersActive) return;
   listenersActive = true;
-  loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false };
+  loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false };
 
   unsubscribers.push(db.collection('meta').doc('settings').onSnapshot(doc=>{
     DB.settings = Object.assign(JSON.parse(JSON.stringify(defaultSettings)), doc.exists ? doc.data() : {});
@@ -657,6 +660,18 @@ function attachListeners(){
     loadedFlags.costings = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.costings = true; afterSync(); }));
+
+  unsubscribers.push(db.collection('listings').onSnapshot(snap=>{
+    DB.listings = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    loadedFlags.listings = true;
+    afterSync();
+  }, err=>{ console.error(err); loadedFlags.listings = true; afterSync(); }));
+
+  unsubscribers.push(db.collection('listingAccounts').onSnapshot(snap=>{
+    DB.listingAccounts = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    loadedFlags.listingAccounts = true;
+    afterSync();
+  }, err=>{ console.error(err); loadedFlags.listingAccounts = true; afterSync(); }));
 }
 function detachListeners(){
   unsubscribers.forEach(u=>{ try{ u(); }catch(e){} });
@@ -681,9 +696,9 @@ function showSetupScreen(){
   el.innerHTML = `
     <div class="center-box wide">
       <h2>One-time Setup Needed</h2>
-      <p>Firebase config abhi tak file mein daali nahi gayi hai. Ye steps follow karein:</p>
+      <p>Firebase configuration has not been added to this file yet. Follow these steps:</p>
       <div class="setup-steps">
-        1. <b>console.firebase.google.com</b> pe jaakar naya project banayein.<br>
+        1. <b>console.firebase.google.com</b> to create a new project.<br>
         2. Project ke andar <b>Build → Authentication → Get Started → Email/Password</b> enable karein.<br>
         3. <b>Build → Firestore Database → Create database</b> (Production mode, region: asia-south1 ya nearest).<br>
         4. Firestore &rarr; <b>Rules</b> tab mein ye paste karke Publish karein:
@@ -696,8 +711,8 @@ service cloud.firestore {
   }
 }</pre>
         5. Project Settings (gear icon) &rarr; scroll to <b>Your apps</b> &rarr; click Web icon (&lt;/&gt;) &rarr; register app &rarr; copy the <code>firebaseConfig</code> object.<br>
-        6. Is HTML file ko text editor mein kholein, <code>firebaseConfig</code> section dhundhein, apne values paste karein.<br>
-        7. <b>Authentication &rarr; Users &rarr; Add user</b> se apne staff members ke email/password add karein — wahi unka login hoga.<br>
+        6. Open this HTML file in a text editor and <code>firebaseConfig</code> section dhundhein, paste your values.<br>
+        7. <b>Authentication &rarr; Users &rarr; Add user</b> se add staff member email/password accounts — these will be used for login.<br>
         8. File ko save karke apni hosting/domain pe upload kar dein.
       </div>
     </div>
@@ -722,7 +737,7 @@ function showLoginScreen(error){
       <p style="margin-top:14px; font-size:12.5px; text-align:center;">
         <span style="cursor:pointer; text-decoration:underline; color:var(--gold-dark);" onclick="showForgotPasswordScreen()">Password bhool gaye?</span>
       </p>
-      <p style="margin-top:10px; font-size:11.5px;">Naya staff account chahiye? Studio owner se poochein — wo Firebase Console se add karte hain.</p>
+      <p style="margin-top:10px; font-size:11.5px;">Need a new staff account? Ask the studio owner to add it from Firebase Console.</p>
     </div>
   `;
   document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptLogin(); });
@@ -734,7 +749,7 @@ function showForgotPasswordScreen(message, isError){
     <div class="center-box">
       <div class="center-stamp"><img src="${LOGO_DATA_URL}" alt="logo"></div>
       <h2>Password Reset</h2>
-      <p>Apna login email daaliye — hum reset link bhej denge</p>
+      <p>Enter your login email and we will send a reset link</p>
       <div class="field"><label>Email</label><input type="email" id="resetEmail" placeholder="you@studio.com"></div>
       <div class="form-error" style="color:${isError?'var(--brick)':'var(--gold-dark)'};">${message||''}</div>
       <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="sendPasswordReset()">Send Reset Link</button>
@@ -746,10 +761,10 @@ function showForgotPasswordScreen(message, isError){
 }
 function sendPasswordReset(){
   const email = document.getElementById('resetEmail').value.trim();
-  if(!email){ showForgotPasswordScreen('Email daaliye.', true); return; }
+  if(!email){ showForgotPasswordScreen('Enter your email.', true); return; }
   showForgotPasswordScreen('Bhej rahe hain...', false);
   auth.sendPasswordResetEmail(email)
-    .then(()=>showForgotPasswordScreen('Reset link bhej diya gaya hai — apna email (aur spam folder) check karein.', false))
+    .then(()=>showForgotPasswordScreen('Reset link sent. Check your email and spam folder.', false))
     .catch(err=>showForgotPasswordScreen('Error: '+(err.message||'Kuch galat hua.'), true));
 }
 function attemptLogin(){
@@ -758,7 +773,7 @@ function attemptLogin(){
   if(!email || !pass){ document.getElementById('loginError').textContent='Email aur password dono daalein.'; return; }
   document.getElementById('loginError').textContent='Signing in...';
   auth.signInWithEmailAndPassword(email, pass).catch(err=>{
-    document.getElementById('loginError').textContent = 'Login fail: ' + (err.message||'Galat email/password.');
+    document.getElementById('loginError').textContent = 'Login failed: ' + (err.message||'Galat email/password.');
   });
 }
 function signOutUser(){
@@ -827,6 +842,8 @@ function render(){
   const main = document.getElementById('main');
   if(currentPage==='dashboard') main.innerHTML = renderDashboard();
   else if(currentPage==='styles') main.innerHTML = renderStyles();
+  else if(currentPage==='listings') main.innerHTML = renderListingManager();
+  else if(currentPage==='listingdetail') main.innerHTML = renderListingDetail(window._viewingListingId);
   else if(currentPage==='costing') main.innerHTML = renderCostingList();
   else if(currentPage==='newcosting') main.innerHTML = renderCostingBuilder();
   else if(currentPage==='viewcosting') main.innerHTML = renderCostingView(window._viewingCostingId);
@@ -895,7 +912,7 @@ function getTopClients(invoices, limit){
   return Object.entries(map).map(([name,total])=>({name,total})).sort((a,b)=>b.total-a.total).slice(0,limit);
 }
 function renderBarList(data){
-  if(!data.length) return `<div style="color:var(--slate); font-size:13px; padding:10px 0;">Abhi data nahi hai.</div>`;
+  if(!data.length) return `<div style="color:var(--slate); font-size:13px; padding:10px 0;">No data available yet.</div>`;
   const maxVal = Math.max(...data.map(d=>d.total), 1);
   return data.map(d=>`
     <div style="margin-bottom:12px;">
@@ -944,7 +961,7 @@ function renderDashboard(){
 
     <div class="panel" style="margin-bottom:26px;">
       <h3>Monthly Revenue (Last 6 Months)</h3>
-      ${totalInvoices? renderMonthlyChartSVG(getMonthlyRevenue(DB.invoices, 6)) : `<div style="color:var(--slate); font-size:13px;">Abhi data nahi hai.</div>`}
+      ${totalInvoices? renderMonthlyChartSVG(getMonthlyRevenue(DB.invoices, 6)) : `<div style="color:var(--slate); font-size:13px;">No data available yet.</div>`}
     </div>
 
     <div class="grid" style="grid-template-columns:1fr 1fr; margin-bottom:30px;">
@@ -959,7 +976,7 @@ function renderDashboard(){
     </div>
 
     <h3 class="serif">Recent Invoices</h3>
-    ${recent.length? renderInvoiceTable(recent, true) : `<div class="empty-state"><div class="big">▤</div>Koi invoice nahi bana abhi tak.</div>`}
+    ${recent.length? renderInvoiceTable(recent, true) : `<div class="empty-state"><div class="big">▤</div>No invoices created yet.</div>`}
   `;
 }
 
@@ -971,7 +988,7 @@ function renderStyles(){
     <div class="page-header">
       <div>
         <h1 class="page-title">Styles</h1>
-        <p class="page-sub">Apne designs — image, description aur cost</p>
+        <p class="page-sub">Product designs, images, descriptions and costs</p>
       </div>
       <button class="btn btn-primary" onclick="openStyleModal()">+ Add Style</button>
     </div>
@@ -983,15 +1000,16 @@ function renderStyles(){
       </select>
     </div>
     ${items.length? `<div class="grid">${items.map(renderStyleCard).join('')}</div>` :
-      `<div class="empty-state"><div class="big">✦</div>Abhi koi style nahi mili.</div>`}
+      `<div class="empty-state"><div class="big">✦</div>No styles found.</div>`}
   `;
 }
 function renderStyleCard(s){
   return `
     <div class="card">
-      ${s.image? `<img class="style-img" src="${s.image}">` : `<div class="style-img">No Image</div>`}
+      ${(s.thumbnail||s.image)? `<img class="style-img" src="${s.thumbnail||s.image}">` : `<div class="style-img">No Image</div>`}
       <div class="card-body">
         <div class="card-title">${escapeHTML(s.name)}</div>
+        ${s.sku?`<div style="font-size:11px;color:var(--slate);margin-bottom:5px">SKU: ${escapeHTML(s.sku)}</div>`:''}
         <div class="card-desc">${escapeHTML(s.description||'')}</div>
         <div class="tag-row">
           ${s.clientId? `<span class="tag" style="background:rgba(228,167,59,0.18); color:var(--gold-dark);">👤 ${escapeHTML((DB.clients.find(c=>c.id===s.clientId)||{}).name || 'Unknown client')}</span>`:`<span class="tag">General Catalog</span>`}
@@ -1002,7 +1020,7 @@ function renderStyleCard(s){
         <div class="card-cost">${fmtINR(styleTotalCost(s))} <span style="font-size:12px; color:var(--slate); font-weight:500;">/ ${fmtUSD(styleTotalCostUSD(s, DB.settings.usdRate))}</span></div>
         ${(s.packingCost||s.shippingCost||s.otherCost)? `<div style="font-size:11px; color:var(--slate); margin-bottom:8px;">Base ${fmtINR(s.cost)}${s.packingCost?' + Packing '+fmtINR(s.packingCost):''}${s.shippingCost?' + Shipping '+fmtINR(s.shippingCost):''}${s.otherCost?' + Other '+fmtINR(s.otherCost):''}</div>`:''}
         <div class="card-actions">
-          <button class="btn btn-ghost btn-sm" onclick="viewStyleModal('${s.id}')">View</button>
+          <button class="btn btn-ghost btn-sm" onclick="viewStyleModal('${s.id}')">View</button><button class="btn btn-ghost btn-sm" onclick="window._listingQ=s.sku||s.name; navigate('listings')">Listings (${DB.listings.filter(l=>l.styleId===s.id).length})</button>
           <button class="btn btn-ghost btn-sm" onclick="openStyleModal('${s.id}')">Edit</button>
           <button class="btn btn-danger btn-sm" onclick="deleteStyle('${s.id}')">Delete</button>
         </div>
@@ -1020,7 +1038,7 @@ function renderCatalog(){
     <div class="page-header">
       <div>
         <h1 class="page-title">Catalog</h1>
-        <p class="page-sub">Designs select karo aur ek shareable PDF catalog banao (price USD mein dikhega)</p>
+        <p class="page-sub">Select products and create a shareable PDF catalog</p>
       </div>
       <button class="btn btn-primary" onclick="generateCatalogPDF()">&#11015; Download PDF (${window._catalogSelected.size} selected)</button>
     </div>
@@ -1045,7 +1063,7 @@ function renderCatalog(){
       </div>
     </div>
     ${items.length? `<div class="grid">${items.map(renderCatalogStyleCard).join('')}</div>` :
-      `<div class="empty-state"><div class="big">&#10022;</div>Abhi koi style nahi mili.</div>`}
+      `<div class="empty-state"><div class="big">&#10022;</div>No styles found.</div>`}
   `;
 }
 function renderCatalogStyleCard(s){
@@ -1079,7 +1097,7 @@ function clearCatalogSelection(){
 function generateCatalogPDF(){
   window._catalogSelected = window._catalogSelected || new Set();
   const selected = DB.styles.filter(s=>window._catalogSelected.has(s.id));
-  if(!selected.length){ alert('Kam se kam ek style select karo.'); return; }
+  if(!selected.length){ alert('Select at least one style.'); return; }
   const client = DB.clients.find(c=>c.id===window._catalogClient);
   const showPrice = window._catalogShowPrice !== false;
   const wrap = document.createElement('div');
@@ -1122,7 +1140,7 @@ function generateCatalogPDF(){
     pdf.save(`Catalog-${client?client.name.replace(/[^a-z0-9]/gi,'_'):'General'}-${todayStr()}.pdf`);
     document.body.removeChild(wrap);
   }).catch(err=>{
-    alert('PDF banane mein error: '+err.message);
+    alert('PDF generation failed: '+err.message);
     document.body.removeChild(wrap);
   });
 }
@@ -1135,11 +1153,13 @@ function viewStyleModal(id){
     ${s.image? `<img src="${s.image}" style="width:100%; max-height:450px; object-fit:contain; border-radius:10px; margin-bottom:16px;">` : ''}
     <div class="tag-row">
       ${client? `<span class="tag" style="background:rgba(228,167,59,0.18); color:var(--gold-dark);">👤 ${escapeHTML(client.name)}</span>`:`<span class="tag">General Catalog</span>`}
+      ${s.sku?`<span class="tag">SKU: ${escapeHTML(s.sku)}</span>`:''}
       ${s.size? `<span class="tag">Size: ${escapeHTML(s.size)}</span>`:''}
       ${s.fabric? `<span class="tag">${escapeHTML(s.fabric)}</span>`:''}
       ${s.hsnCode? `<span class="tag">HSN/SAC: ${escapeHTML(s.hsnCode)}</span>`:''}
     </div>
     ${s.description? `<p style="font-size:13.5px; color:var(--charcoal); line-height:1.6; margin:12px 0;">${escapeHTML(s.description)}</p>`:''}
+    ${s.mediaDriveUrl?`<div style="margin:10px 0"><a href="${escapeHTML(s.mediaDriveUrl)}" target="_blank" class="btn btn-ghost btn-sm">Open Google Drive Media</a></div>`:''}
     <div class="panel" style="padding:14px; margin-top:8px;">
       <div style="font-size:12px; color:var(--slate); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:8px;">Cost Breakdown</div>
       <div class="summary-row"><span>Base Cost</span><span class="mono">${fmtINR(s.cost)} / ${fmtUSD(s.costUSD!==undefined&&s.costUSD!==''?s.costUSD:(s.cost||0)/(DB.settings.usdRate||83))}</span></div>
@@ -1162,6 +1182,10 @@ function openStyleModal(id){
     <div class="field">
       <label>Style Name</label>
       <input type="text" id="f_name" value="${escapeHTML(s.name)}" placeholder="e.g. Anarkali Suit - Rose">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>SKU</label><input type="text" id="f_sku" value="${escapeHTML(s.sku||'')}" placeholder="e.g. CV-4"></div>
+      <div class="field"><label>Google Drive Media Folder</label><input type="url" id="f_drive" value="${escapeHTML(s.mediaDriveUrl||'')}" placeholder="https://drive.google.com/..."></div>
     </div>
     <div class="field">
       <label>Client (optional — leave blank for general catalog)</label>
@@ -1220,7 +1244,8 @@ function openStyleModal(id){
       <label>HSN / SAC Code</label>
       <input type="text" id="f_hsn" value="${escapeHTML(s.hsnCode||'')}" placeholder="e.g. 6204">
     </div>
-    <h3 style="margin-top:20px; margin-bottom:14px;">Images</h3>
+    <h3 style="margin-top:20px; margin-bottom:14px;">Images & Media</h3>
+    <div style="font-size:11.5px; color:var(--slate); margin-bottom:10px;">The main image is used as the product thumbnail. Full-size media can stay in Google Drive.</div>
     <div class="field">
       <label>Image Link / URL (optional)</label>
       <div style="display:flex; gap:8px;">
@@ -1281,7 +1306,7 @@ function fetchImageFromURL(){
   const urlInput = document.getElementById('f_imageurl');
   const url = urlInput.value.trim();
   if(!url){
-    alert('Image URL daaliye');
+    alert('Enter an image URL.');
     return;
   }
   const img = new Image();
@@ -1309,12 +1334,14 @@ function fetchImageFromURL(){
     preview.style.display = 'block';
   };
   img.onerror = function(){
-    alert('Image load nahi ho saka. Check URL aur CORS settings.');
+    alert('Image could not be loaded. Check the URL and CORS settings.');
   };
   img.src = url;
 }
 function saveStyle(id){
   const name = document.getElementById('f_name').value.trim();
+  const sku = document.getElementById('f_sku').value.trim();
+  const mediaDriveUrl = document.getElementById('f_drive').value.trim();
   const clientId = document.getElementById('f_client').value;
   const desc = document.getElementById('f_desc').value.trim();
   const size = document.getElementById('f_size').value.trim();
@@ -1365,17 +1392,18 @@ function saveStyle(id){
   const previewEl2 = document.getElementById('imgPreview2');
   const image1 = previewEl1 && previewEl1.style.display!=='none' ? previewEl1.src : '';
   const image2 = previewEl2 && previewEl2.style.display!=='none' ? previewEl2.src : '';
-  if(!name){ alert('Style name daaliye'); return; }
-  const data = { name, description:desc, cost, costUSD, packingCost, packingCostUSD, shippingCost, shippingCostUSD, otherCost, otherCostUSD, size, fabric, hsnCode, clientId, imageUrl, imageUrl2:imageUrl };
+  if(!name){ alert('Enter a style name.'); return; }
+  const data = { name, sku, mediaDriveUrl, description:desc, cost, costUSD, packingCost, packingCostUSD, shippingCost, shippingCostUSD, otherCost, otherCostUSD, size, fabric, hsnCode, clientId, imageUrl, imageUrl2:imageUrl };
   if(image1) data.image = image1;
   if(image2) data.image2 = image2;
+  data.thumbnail = image1 || s.thumbnail || s.image || '';
   const ref = id ? db.collection('styles').doc(id) : db.collection('styles').doc();
-  ref.set(data, {merge:true}).catch(err=>alert('Save fail: '+err.message));
+  ref.set(data, {merge:true}).catch(err=>alert('Save failed: '+err.message));
   closeModal();
 }
 function deleteStyle(id){
-  if(!confirm('Ye style delete karein?')) return;
-  db.collection('styles').doc(id).delete().catch(err=>alert('Delete fail: '+err.message));
+  if(!confirm('Delete this style?')) return;
+  db.collection('styles').doc(id).delete().catch(err=>alert('Delete failed: '+err.message));
 }
 
 /* ============================= CLIENTS ============================= */
@@ -1385,7 +1413,7 @@ function renderClients(){
     <div class="page-header">
       <div>
         <h1 class="page-title">Clients</h1>
-        <p class="page-sub">Apne customers ki list</p>
+        <p class="page-sub">Customer directory</p>
       </div>
       <button class="btn btn-primary" onclick="openClientModal()">+ Add Client</button>
     </div>
@@ -1407,7 +1435,7 @@ function renderClients(){
           </tr>
         `).join('')}
       </tbody>
-    </table>` : `<div class="empty-state"><div class="big">☺</div>Abhi koi client add nahi hua.</div>`}
+    </table>` : `<div class="empty-state"><div class="big">☺</div>No clients added yet.</div>`}
   `;
 }
 function openClientModal(id){
@@ -1467,7 +1495,7 @@ function normalizeCountryField(){
 }
 function saveClient(id){
   const name = document.getElementById('f_name').value.trim();
-  if(!name){ alert('Client ka naam daaliye'); return; }
+  if(!name){ alert('Enter the client name.'); return; }
   const data = {
     name,
     email: document.getElementById('f_email').value.trim(),
@@ -1479,12 +1507,12 @@ function saveClient(id){
     gstin: document.getElementById('f_gstin').value.trim()
   };
   const ref = id ? db.collection('clients').doc(id) : db.collection('clients').doc();
-  ref.set(data, {merge:true}).catch(err=>alert('Save fail: '+err.message));
+  ref.set(data, {merge:true}).catch(err=>alert('Save failed: '+err.message));
   closeModal();
 }
 function deleteClient(id){
-  if(!confirm('Ye client delete karein?')) return;
-  db.collection('clients').doc(id).delete().catch(err=>alert('Delete fail: '+err.message));
+  if(!confirm('Delete this client?')) return;
+  db.collection('clients').doc(id).delete().catch(err=>alert('Delete failed: '+err.message));
 }
 function viewClientDetail(id){
   window._viewingClientId = id;
@@ -1516,7 +1544,7 @@ function shareOnWhatsApp(invId){
 }
 function sendToTailor(invId){
   const inv = DB.invoices.find(i=>i.id===invId);
-  if(!inv || !inv.assignedTailorId) { alert('Tailor assign nahi hua'); return; }
+  if(!inv || !inv.assignedTailorId) { alert('No tailor assigned.'); return; }
   const tailor = DB.tailors.find(t=>t.id===inv.assignedTailorId);
   const style = inv.items[0];
   let msg = `📦 NEW ORDER\n`;
@@ -1556,7 +1584,7 @@ function downloadInvoicePDF(invId){
     pdf.save(`${inv.number}.pdf`);
     if(btn) btn.textContent = originalText;
   }).catch(err=>{
-    alert('PDF banane mein error: '+err.message);
+    alert('PDF generation failed: '+err.message);
     if(btn) btn.textContent = originalText;
   });
 }
@@ -1596,15 +1624,15 @@ function duplicateInvoice(invId){
   render();
 }
 function deleteInvoice(invId){
-  if(!confirm('Ye invoice delete kar doon? Confirm karein.')) return;
+  if(!confirm('Delete this invoice? Please confirm.')) return;
   db.collection('invoices').doc(invId).delete().then(()=>{
-    alert('Invoice delete ho gaya');
+    alert('Invoice deleted successfully.');
     navigate('invoices');
-  }).catch(err=>alert('Delete fail: '+err.message));
+  }).catch(err=>alert('Delete failed: '+err.message));
 }
 function renderClientDetail(id){
   const c = DB.clients.find(x=>x.id===id);
-  if(!c) return `<div class="empty-state">Client nahi mila.</div>`;
+  if(!c) return `<div class="empty-state">Client not found.</div>`;
   const styles = DB.styles.filter(s=>s.clientId===id);
   const invoices = DB.invoices.filter(i=>i.clientId===id).sort((a,b)=>b.createdAt-a.createdAt);
   const costings = DB.costings.filter(x=>x.clientId===id);
@@ -1655,14 +1683,14 @@ function renderClientDetail(id){
 
     <h3 class="serif">Styles for ${escapeHTML(c.name)}</h3>
     ${styles.length? `<div class="grid" style="margin-bottom:30px;">${styles.map(renderStyleCard).join('')}</div>` :
-      `<div class="empty-state" style="margin-bottom:30px;"><div class="big">✦</div>Is client ke liye abhi koi style nahi hai.</div>`}
+      `<div class="empty-state" style="margin-bottom:30px;"><div class="big">✦</div>No styles found for this client.</div>`}
 
     <h3 class="serif">Costings for ${escapeHTML(c.name)}</h3>
     ${costings.length? `<div class="grid" style="margin-bottom:30px;">${costings.map(x=>`<div class="card"><div class="card-body"><h3 class="card-title">${escapeHTML(x.styleName)}</h3><div class="card-cost">₹${money(x.totalCost||0)} <span style="font-size:12px;color:var(--slate)">/ $${money(x.sellingUSD||0)}</span></div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="viewCosting('${x.id}')">View</button><button class="btn btn-ghost btn-sm" onclick="editCosting('${x.id}')">Edit</button></div></div></div>`).join('')}</div>` : `<div class="empty-state" style="margin-bottom:30px;padding:25px;"><div class="big">₹</div>No costing for this client yet.</div>`}
 
     <h3 class="serif">Invoices for ${escapeHTML(c.name)}</h3>
     ${invoices.length? renderInvoiceTable(invoices, false) :
-      `<div class="empty-state"><div class="big">▤</div>Is client ka abhi koi invoice nahi bana.</div>`}
+      `<div class="empty-state"><div class="big">▤</div>No invoices created for this client.</div>`}
   `;
 }
 
@@ -1697,14 +1725,14 @@ function renderInvoiceList(){
     ${allSorted.length? `
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:16px; padding:12px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
       <div class="field" style="margin:0;">
-        <label>Month se filter karein</label>
+        <label>Filter by Month</label>
         <select onchange="setInvoiceListFilter('month', this.value)">
           <option value="">-- Sab Months --</option>
           ${monthKeys.map(k=>`<option value="${k}" ${invoiceListFilters.month===k?'selected':''}>${monthLabel(k)}</option>`).join('')}
         </select>
       </div>
       <div class="field" style="margin:0;">
-        <label>Client se filter karein</label>
+        <label>Filter by Client</label>
         <select onchange="setInvoiceListFilter('clientId', this.value)">
           <option value="">-- Sab Clients --</option>
           ${DB.clients.map(c=>`<option value="${c.id}" ${invoiceListFilters.clientId===c.id?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}
@@ -1715,16 +1743,16 @@ function renderInvoiceList(){
       ` : ''}
       ${(invoiceListFilters.month || invoiceListFilters.clientId)? `<button class="btn btn-ghost btn-sm" onclick="invoiceListFilters={month:'',clientId:''}; render();">Filter Clear Karein</button>` : ''}
     </div>` : ''}
-    ${items.length? renderInvoiceTable(items,false) : `<div class="empty-state"><div class="big">▤</div>${allSorted.length? 'Is filter mein koi invoice nahi mila.' : 'Koi invoice nahi bana. "New Invoice" se shuru karein.'}</div>`}
+    ${items.length? renderInvoiceTable(items,false) : `<div class="empty-state"><div class="big">▤</div>${allSorted.length? 'No invoices found for this filter.' : 'No invoices created. Start with "New Invoice".'}</div>`}
   `;
 }
 function mergeMonthInvoices(){
-  if(!invoiceListFilters.month){ alert('Pehle ek month select karein.'); return; }
+  if(!invoiceListFilters.month){ alert('Select a month first.'); return; }
   const filtered = DB.invoices.filter(i=>
     monthKey(i.date)===invoiceListFilters.month &&
     (!invoiceListFilters.clientId || i.clientId===invoiceListFilters.clientId)
   );
-  if(filtered.length<2){ alert('Is selection mein merge ke liye kam se kam 2 invoices hone chahiye. Agar alag-alag clients ke invoices hain, toh pehle Client filter bhi laga lein.'); return; }
+  if(filtered.length<2){ alert('At least 2 invoices are required to merge. For different clients, apply the Client filter first.'); return; }
   mergeSelection = new Set(filtered.map(i=>i.id));
   mergeSelectedInvoices();
 }
@@ -1735,7 +1763,7 @@ function renderInvoiceTable(items, compact){
     ${mergeSelection.size>0? `
     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
       <span style="font-size:12.5px; color:var(--slate);"><b>${mergeSelection.size}</b> invoice(s) selected</span>
-      ${mergeSelection.size>=2? `<button class="btn btn-primary btn-sm" onclick="mergeSelectedInvoices()">🔗 Merge into One Invoice</button>` : `<span style="font-size:11.5px; color:var(--slate);">Merge ke liye kam se kam 2 invoices chunein</span>`}
+      ${mergeSelection.size>=2? `<button class="btn btn-primary btn-sm" onclick="mergeSelectedInvoices()">🔗 Merge into One Invoice</button>` : `<span style="font-size:11.5px; color:var(--slate);">Select at least 2 invoices to merge</span>`}
       <button class="btn btn-ghost btn-sm" onclick="clearMergeSelection()">Clear Selection</button>
     </div>` : ''}
     <table>
@@ -1775,13 +1803,13 @@ function toggleSelectAllInvoices(checked, ids){
 }
 function clearMergeSelection(){ mergeSelection.clear(); render(); }
 function mergeSelectedInvoices(){
-  if(mergeSelection.size<2){ alert('Merge karne ke liye kam se kam 2 invoices select karein.'); return; }
+  if(mergeSelection.size<2){ alert('Select at least 2 invoices to merge.'); return; }
   const invs = [...mergeSelection].map(id=>DB.invoices.find(i=>i.id===id)).filter(Boolean)
     .sort((a,b)=>a.createdAt-b.createdAt);
-  if(invs.length<2){ alert('Selected invoices nahi mile.'); return; }
+  if(invs.length<2){ alert('Selected invoices were not found.'); return; }
   const clientIds = new Set(invs.map(i=>i.clientId));
   if(clientIds.size>1){
-    alert('Sirf ek hi client ke invoices ko ek saath merge kar sakte hain. Please sirf usi client ke invoices select karein.');
+    alert('Sirf ek hi client ke invoices ko ek saath merge kar sakte hain. Please select invoices for the same client only.');
     return;
   }
   const first = invs[0];
@@ -1871,7 +1899,7 @@ function exportInvoicesExcel(){
 }
 function deleteInvoice(id){
   if(!confirm('Ye invoice delete karein?')) return;
-  db.collection('invoices').doc(id).delete().catch(err=>alert('Delete fail: '+err.message));
+  db.collection('invoices').doc(id).delete().catch(err=>alert('Delete failed: '+err.message));
 }
 function viewInvoice(id){
   window._viewingInvoiceId = id;
@@ -1916,7 +1944,7 @@ function renderInvoiceBuilder(){
   const st = newInvoiceState;
   if(!DB.clients.length){
     return `<div class="page-header"><h1 class="page-title">New Invoice</h1></div>
-      <div class="empty-state"><div class="big">☺</div>Pehle ek client add karein.
+      <div class="empty-state"><div class="big">☺</div>Add a client first.
         <div style="margin-top:14px;"><button class="btn btn-primary" onclick="navigate('clients')">Go to Clients</button></div>
       </div>`;
   }
@@ -1950,16 +1978,16 @@ function renderInvoiceBuilder(){
     <div class="page-header">
       <div>
         <h1 class="page-title">${st.editId? 'Edit Invoice' : 'New Invoice'}</h1>
-        <p class="page-sub">${st.editId? 'Invoice details update karein — save karte hi purana version overwrite ho jayega' : 'Client chunein, styles add karein, GST auto-calculate hoga'}</p>
+        <p class="page-sub">${st.editId? 'Update invoice details. Saving will overwrite the current version.' : 'Select a client and add products. GST will be calculated automatically.'}</p>
       </div>
     </div>
     ${st.mergedFrom? `
     <div style="font-size:12.5px; color:var(--slate); margin-bottom:16px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
-      🔗 Ye invoice merge se bana hai: <b>${st.mergedFrom.map(m=>escapeHTML(m.number)).join(', ')}</b>. Original invoices unchanged hain, sirf ye naya combined invoice save hoga jab aap "Generate Invoice" click karenge.
+      🔗 This invoice was created by merging: <b>${st.mergedFrom.map(m=>escapeHTML(m.number)).join(', ')}</b>. Original invoices remain unchanged; only this new combined invoice will be saved jab aap "click "Generate Invoice".
     </div>` : ''}
     ${st.sourceOrderIds? `
     <div style="font-size:12.5px; color:var(--slate); margin-bottom:16px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
-      🧾 Ye invoice <b>${st.sourceOrderIds.length} orders</b> ko combine karke bana hai. "Generate Invoice" click karte hi ye sab orders automatically "Invoiced" mark ho jayenge (orders delete nahi honge, sirf status update hoga).
+      🧾 This invoice combines <b>${st.sourceOrderIds.length} orders</b>. Clicking "Generate Invoice" will mark these orders as "Invoiced"; orders will not be deleted.
     </div>` : ''}
     <div class="inv-layout">
       <div class="panel">
@@ -2032,7 +2060,7 @@ function renderInvoiceBuilder(){
         ${isExport? `
         <h3>Export Details</h3>
         <div style="font-size:12px; color:var(--slate); margin-bottom:16px; padding:10px; background:var(--ivory); border-radius:6px;">
-          IEC No: <b>${escapeHTML(DB.settings.iecNumber||'-')}</b>${DB.settings.lutNumber? `<br>LUT No: <b>${escapeHTML(DB.settings.lutNumber)}</b>${DB.settings.lutDetails? ' ('+escapeHTML(DB.settings.lutDetails)+')':''}` : `<br><span style="color:var(--danger, #c0392b);">LUT number set nahi hai — Settings mein add karein.</span>`}
+          IEC No: <b>${escapeHTML(DB.settings.iecNumber||'-')}</b>${DB.settings.lutNumber? `<br>LUT No: <b>${escapeHTML(DB.settings.lutNumber)}</b>${DB.settings.lutDetails? ' ('+escapeHTML(DB.settings.lutDetails)+')':''}` : `<br><span style="color:var(--danger, #c0392b);">LUT number is not set — add it in Settings.</span>`}
         </div>
         ` : ''}
 
@@ -2046,7 +2074,7 @@ function renderInvoiceBuilder(){
           <button class="btn btn-ghost" onclick="openSizeQtyPanel()">+ Add by Sizes</button>
           <button class="btn btn-ghost" onclick="addManualInvoiceItem()">+ Manual Entry</button>
         </div>
-        <div style="font-size:11.5px; color:var(--slate); margin:-4px 0 10px 0;">Sirf is client ki styles aur General Catalog wali styles dikh rahi hain. "+ Add by Sizes" se ek hi style ko multiple sizes mein alag-alag qty ke saath ek baar mein add karein. Ya phir "+ Manual Entry" se koi bhi item bina catalog ke seedha type kar ke add karein.</div>
+        <div style="font-size:11.5px; color:var(--slate); margin:-4px 0 10px 0;">Only this client's styles and General Catalog styles are shown. Use "+ Add by Sizes" to add multiple sizes and quantities at once, or "+ Manual Entry" to enter an item without the catalog.</div>
         ${st.sizeQtyPanel ? (()=>{
           const panel = st.sizeQtyPanel;
           const style = DB.styles.find(s=>s.id===panel.styleId);
@@ -2073,7 +2101,7 @@ function renderInvoiceBuilder(){
                 <input type="number" min="0" value="${panel.qtys['__custom']||''}" placeholder="0" onchange="updateSizeQtyPanel('__custom', this.value)">
               </div>
             </div>
-            <div style="font-size:11.5px; color:var(--slate); margin-bottom:10px;">Total Qty: <b>${totalQty}</b> — har size jismein qty &gt; 0 hai, uska alag line item banega (same rate ke saath).</div>
+            <div style="font-size:11.5px; color:var(--slate); margin-bottom:10px;">Total Qty: <b>${totalQty}</b> — each size with quantity &gt; 0 will become a separate line item at the same rate.</div>
             <div style="display:flex; gap:8px;">
               <button class="btn btn-primary" onclick="confirmSizeQtyAdd()">Add to Invoice</button>
               <button class="btn btn-ghost" onclick="newInvoiceState.sizeQtyPanel=null; render();">Cancel</button>
@@ -2102,7 +2130,7 @@ function renderInvoiceBuilder(){
                 <div class="remove-x" onclick="removeInvoiceItem(${idx})" title="Remove item">✕</div>
               </div>
             </div>
-          `).join('') : `<div style="color:var(--slate); font-size:13px; padding:12px 0;">Koi item add nahi hua abhi.</div>`}
+          `).join('') : `<div style="color:var(--slate); font-size:13px; padding:12px 0;">No items added yet.</div>`}
         </div>
 
         <h3 style="margin-top:22px;">Notes</h3>
@@ -2181,7 +2209,7 @@ function addManualInvoiceItem(){
 function openSizeQtyPanel(){
   const sel = document.getElementById('stylePicker');
   const id = sel.value;
-  if(!id){ alert('Pehle ek style select karein, phir "+ Add by Sizes" click karein'); return; }
+  if(!id){ alert('Select a style first, then click "+ Add by Sizes".'); return; }
   newInvoiceState.sizeQtyPanel = { styleId:id, qtys:{}, customSize:'' };
   render();
 }
@@ -2194,7 +2222,7 @@ function confirmSizeQtyAdd(){
   const panel = newInvoiceState.sizeQtyPanel;
   if(!panel) return;
   const style = DB.styles.find(s=>s.id===panel.styleId);
-  if(!style){ alert('Style nahi mila'); newInvoiceState.sizeQtyPanel=null; render(); return; }
+  if(!style){ alert('Style not found.'); newInvoiceState.sizeQtyPanel=null; render(); return; }
   const rate = styleTotalCost(style);
   const rateUSD = Number(styleTotalCostUSD(style, DB.settings.usdRate).toFixed(2));
   let added = 0;
@@ -2216,7 +2244,7 @@ function confirmSizeQtyAdd(){
     });
     added++;
   }
-  if(added===0){ alert('Kam se kam ek size mein qty daalein'); return; }
+  if(added===0){ alert('Enter quantity for at least one size.'); return; }
   newInvoiceState.sizeQtyPanel = null;
   render();
 }
@@ -2225,7 +2253,7 @@ function removeInvoiceItem(idx){ newInvoiceState.items.splice(idx,1); render(); 
 
 function editInvoice(id){
   const inv = DB.invoices.find(i=>i.id===id);
-  if(!inv){ alert('Invoice nahi mila.'); return; }
+  if(!inv){ alert('Invoice not found.'); return; }
   newInvoiceState = {
     editId: inv.id,
     number: inv.number || '',
@@ -2262,7 +2290,7 @@ function editInvoice(id){
 
 function finalizeInvoice(){
   const st = newInvoiceState;
-  if(!st.items.length){ alert('Kam se kam ek item add karein'); return; }
+  if(!st.items.length){ alert('Add at least one item.'); return; }
   const client = DB.clients.find(c=>c.id===st.clientId);
   const isExport = client.country && client.country.trim().toLowerCase()!=='india';
   const sameState = !isExport && client.state === DB.settings.bizState;
@@ -2335,7 +2363,7 @@ function finalizeInvoice(){
         window._viewingInvoiceId = st.editId;
         navigate('viewinvoice');
       })
-      .catch(err=>alert('Invoice update fail: '+err.message));
+      .catch(err=>alert('Invoice update failed: '+err.message));
   } else {
     const ref = db.collection('invoices').doc();
     ref.set(invoiceData)
@@ -2355,7 +2383,7 @@ function finalizeInvoice(){
         window._viewingInvoiceId = ref.id;
         navigate('viewinvoice');
       })
-      .catch(err=>alert('Invoice save fail: '+err.message));
+      .catch(err=>alert('Invoice save failed: '+err.message));
   }
 }
 
@@ -2390,7 +2418,7 @@ function renderOrderBuilder(){
   const st = newOrderState;
   if(!DB.clients.length){
     return `<div class="page-header"><h1 class="page-title">New Order</h1></div>
-      <div class="empty-state"><div class="big">☺</div>Pehle ek client add karein.
+      <div class="empty-state"><div class="big">☺</div>Add a client first.
         <div style="margin-top:14px;"><button class="btn btn-primary" onclick="navigate('clients')">Go to Clients</button></div>
       </div>`;
   }
@@ -2410,7 +2438,7 @@ function renderOrderBuilder(){
     <div class="page-header">
       <div>
         <h1 class="page-title">${st.editId? 'Edit Order' : 'New Order'}</h1>
-        <p class="page-sub">Order details save karein — baad mein isko ek ya multiple orders ke saath invoice mein convert kar sakte hain</p>
+        <p class="page-sub">Save order details. You can later convert this order or multiple orders into an invoice.</p>
       </div>
     </div>
     <div class="inv-layout">
@@ -2488,7 +2516,7 @@ function renderOrderBuilder(){
                 <div class="remove-x" onclick="removeOrderItem(${idx})" title="Remove item">✕</div>
               </div>
             </div>
-          `).join('') : `<div style="color:var(--slate); font-size:13px; padding:12px 0;">Koi item add nahi hua abhi.</div>`}
+          `).join('') : `<div style="color:var(--slate); font-size:13px; padding:12px 0;">No items added yet.</div>`}
         </div>
 
         <h3 style="margin-top:22px;">Notes</h3>
@@ -2502,7 +2530,7 @@ function renderOrderBuilder(){
           <button class="${st.currencyMode==='USD'?'active':''}" onclick="setOrderCurrencyMode('USD')">$ USD</button>
           <button class="${st.currencyMode==='BOTH'?'active':''}" onclick="setOrderCurrencyMode('BOTH')">₹ + $ Both</button>
         </div>
-        <div style="font-size:11.5px; color:var(--slate); margin:8px 0 4px;">Rate/charges yahan se select karein — "Both" chunne par dono currencies mein entry kar sakte hain.</div>
+        <div style="font-size:11.5px; color:var(--slate); margin:8px 0 4px;">Select the rate/charges currency. Choose "Both" to enter both currencies.</div>
 
         <h3 style="margin-top:18px;">Charges</h3>
         <div class="field-row">
@@ -2518,7 +2546,7 @@ function renderOrderBuilder(){
         ${shippingCharge||shippingChargeUSD? `<div class="summary-row"><span>Shipping</span><span class="mono">${showINR?fmtINR(shippingCharge):''}${showINR&&showUSD?' / ':''}${showUSD?fmtUSD(shippingChargeUSD):''}</span></div>`:''}
         ${otherCharge||otherChargeUSD? `<div class="summary-row"><span>Packing</span><span class="mono">${showINR?fmtINR(otherCharge):''}${showINR&&showUSD?' / ':''}${showUSD?fmtUSD(otherChargeUSD):''}</span></div>`:''}
         <div class="summary-row total"><span>Total (approx)</span><span class="mono">${showINR?fmtINR(total):''}${showINR&&showUSD?' / ':''}${showUSD?fmtUSD(totalUSD):''}</span></div>
-        <div style="font-size:11.5px; color:var(--slate); margin-top:6px;">Note: Ye sirf reference total hai. GST invoice banate waqt final calculation invoice builder mein hoga.</div>
+        <div style="font-size:11.5px; color:var(--slate); margin-top:6px;">Note: This is a reference total. Final GST calculation is handled in the invoice builder.</div>
         <button class="btn btn-primary" style="width:100%; margin-top:18px;" onclick="saveOrder()">${st.editId? 'Update Order' : 'Save Order'}</button>
         <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="newOrderState=null; navigate('orders');">Cancel</button>
       </div>
@@ -2547,8 +2575,8 @@ function removeOrderItem(idx){ newOrderState.items.splice(idx,1); render(); }
 
 function saveOrder(){
   const st = newOrderState;
-  if(!st.clientId){ alert('Client select karein'); return; }
-  if(!st.items.length){ alert('Kam se kam ek item add karein'); return; }
+  if(!st.clientId){ alert('Select a client.'); return; }
+  if(!st.items.length){ alert('Add at least one item.'); return; }
   const client = DB.clients.find(c=>c.id===st.clientId);
   const orderData = {
     clientId: st.clientId,
@@ -2577,18 +2605,18 @@ function saveOrder(){
   if(st.editId){
     db.collection('orders').doc(st.editId).set(orderData, {merge:true})
       .then(()=>{ newOrderState=null; navigate('orders'); })
-      .catch(err=>alert('Order update fail: '+err.message));
+      .catch(err=>alert('Order update failed: '+err.message));
   } else {
     db.collection('orders').add(orderData)
       .then(()=>{ newOrderState=null; navigate('orders'); })
-      .catch(err=>alert('Order save fail: '+err.message));
+      .catch(err=>alert('Order save failed: '+err.message));
   }
 }
 function editOrder(id){
   const ord = DB.orders.find(o=>o.id===id);
-  if(!ord){ alert('Order nahi mila.'); return; }
+  if(!ord){ alert('Order not found.'); return; }
   if(ord.status==='invoiced'){
-    if(!confirm('Ye order already invoice ban chuka hai. Edit karne se sirf order ka record update hoga, uska invoice apne aap change nahi hoga. Continue karein?')) return;
+    if(!confirm('This order has already been invoiced. Editing will update only the order record; its invoice will not change automatically. Continue?')) return;
   }
   newOrderState = {
     editId: ord.id,
@@ -2617,8 +2645,8 @@ function editOrder(id){
   render();
 }
 function deleteOrder(id){
-  if(!confirm('Ye order delete karein? (Agar isse invoice ban chuka hai, wo invoice delete nahi hoga, sirf ye order record delete hoga)')) return;
-  db.collection('orders').doc(id).delete().catch(err=>alert('Delete fail: '+err.message));
+  if(!confirm('Delete this order? If it has already been invoiced, the invoice will not be deleted.')) return;
+  db.collection('orders').doc(id).delete().catch(err=>alert('Delete failed: '+err.message));
 }
 
 let orderListFilters = { month:'', clientId:'', status:'pending' };
@@ -2640,7 +2668,7 @@ function renderOrdersList(){
     <div class="page-header">
       <div>
         <h1 class="page-title">Orders</h1>
-        <p class="page-sub">Orders add karein jaise-jaise aate hain, baad mein sabka ek saath invoice bana lein</p>
+        <p class="page-sub">Add orders as they arrive and create a combined invoice later.</p>
       </div>
       <div style="display:flex; gap:10px;">
         <button class="btn btn-primary" onclick="startNewOrder()">+ New Order</button>
@@ -2707,21 +2735,21 @@ function renderOrdersList(){
         `;}).join('')}
       </tbody>
     </table>
-    ` : `<div class="empty-state"><div class="big">▤</div>Is filter mein koi order nahi hai. "New Order" se shuru karein.</div>`}
+    ` : `<div class="empty-state"><div class="big">▤</div>No orders match this filter. Use "New Order" to add one.</div>`}
   `;
 }
 
 function generateInvoiceFromOrders(){
-  if(!orderSelection.size){ alert('Kam se kam ek order select karein.'); return; }
+  if(!orderSelection.size){ alert('Select at least one order.'); return; }
   const orders = [...orderSelection].map(id=>DB.orders.find(o=>o.id===id)).filter(Boolean).sort((a,b)=>a.createdAt-b.createdAt);
   const pendingOrders = orders.filter(o=>o.status!=='invoiced');
   if(pendingOrders.length !== orders.length){
-    alert('Kuch selected orders already invoiced hain, unhe is naye invoice mein skip kiya ja raha hai.');
+    alert('Some selected orders are already invoiced and will be skipped.');
   }
-  if(!pendingOrders.length){ alert('Koi bhi valid (pending) order select nahi hua.'); return; }
+  if(!pendingOrders.length){ alert('No valid pending order was selected.'); return; }
   const clientIds = new Set(pendingOrders.map(o=>o.clientId));
   if(clientIds.size>1){
-    alert('Sirf ek hi client ke orders ko ek invoice mein combine kar sakte hain. Please Client filter laga kar sirf usi client ke orders select karein.');
+    alert('Only orders for the same client can be combined into one invoice. Apply the Client filter and select that client only.');
     return;
   }
   const first = pendingOrders[0];
@@ -2746,7 +2774,7 @@ function generateInvoiceFromOrders(){
     status: 'pending',
     items: combinedItems,
     gstRate: DB.settings.gstRate,
-    notes: `Orders se bana: ${pendingOrders.map(o=>o.orderNo||o.date).join(', ')}`,
+    notes: `Created from orders: ${pendingOrders.map(o=>o.orderNo||o.date).join(', ')}`,
     invoiceType: 'goods',
     currencyMode: 'INR',
     usdRate: DB.settings.usdRate,
@@ -2768,7 +2796,7 @@ function generateInvoiceFromOrders(){
 /* ============================= INVOICE VIEW / PRINT ============================= */
 function renderInvoiceView(id){
   const inv = DB.invoices.find(i=>i.id===id);
-  if(!inv) return `<div class="empty-state">Invoice nahi mila.</div>`;
+  if(!inv) return `<div class="empty-state">Invoice not found.</div>`;
   const biz = inv.bizSnapshot;
   const client = inv.clientSnapshot;
   const initials = (biz.bizName||'B').trim()[0].toUpperCase();
@@ -2973,7 +3001,7 @@ function renderChallanList(){
           `).join('')}
         </tbody>
       </table>
-    ` : `<div class="empty-state"><div class="big">📦</div>Abhi koi challan nahi. "New Challan" se shuru karein.</div>`}
+    ` : `<div class="empty-state"><div class="big">📦</div>No challans yet. Use "New Challan" to create one.</div>`}
   `;
 }
 
@@ -3001,7 +3029,7 @@ function renderChallanBuilder(){
           <option value="">-- Select Vendor --</option>
           ${DB.vendors.map(v=>`<option value="${v.id}" ${st.vendorId===v.id?'selected':''}>${escapeHTML(v.name)}</option>`).join('')}
         </select>
-        <div style="font-size:12px; color:var(--slate); margin-top:6px;">💡 Vendor nahi mila? Settings mein add karein</div>
+        <div style="font-size:12px; color:var(--slate); margin-top:6px;">💡 Vendor not found? Add it in Settings.</div>
       </div>
       <div class="field">
         <label>Purpose</label>
@@ -3049,7 +3077,7 @@ function renderChallanBuilder(){
 function addChallanMaterial(){
   const desc = document.getElementById('m_desc').value.trim();
   const qty = document.getElementById('m_qty').value.trim();
-  if(!desc || !qty){ alert('Description aur quantity dono daaliye'); return; }
+  if(!desc || !qty){ alert('Enter both description and quantity.'); return; }
   window._newChallanState.materials.push({description:desc, quantity:qty});
   document.getElementById('m_desc').value = '';
   document.getElementById('m_qty').value = '';
@@ -3068,11 +3096,11 @@ function saveChallan(){
   
   db.collection('challans').add(st)
     .then(()=>{
-      alert('Challan save ho gaya!');
+      alert('Challan saved successfully!');
       navigate('challans');
       render();
     })
-    .catch(err=>alert('Save fail: '+err.message));
+    .catch(err=>alert('Save failed: '+err.message));
 }
 
 function viewChallan(id){
@@ -3112,12 +3140,12 @@ function markChallanReturned(id){
       closeModal();
       render();
     })
-    .catch(err=>alert('Update fail: '+err.message));
+    .catch(err=>alert('Update failed: '+err.message));
 }
 
 function renderChallanView(id){
   const c = DB.challans.find(x=>x.id===id);
-  if(!c) return `<div class="empty-state">Challan nahi mila.</div>`;
+  if(!c) return `<div class="empty-state">Challan not found.</div>`;
   return `<div style="display:none;"></div>`;
 }
 
@@ -3343,13 +3371,13 @@ function printChallan(id){
 }
 
 function deleteChallan(id){
-  if(!confirm('Ye challan delete kar doon?')) return;
+  if(!confirm('Delete this challan?')) return;
   db.collection('challans').doc(id).delete()
     .then(()=>{
-      alert('Challan delete ho gaya');
+      alert('Challan deleted successfully.');
       render();
     })
-    .catch(err=>alert('Delete fail: '+err.message));
+    .catch(err=>alert('Delete failed: '+err.message));
 }
 
 /* ============================= TAILOR DASHBOARD ============================= */
@@ -3435,7 +3463,7 @@ function copyMessageAndShare(){
         const whatsappUrl = `https://web.whatsapp.com/send?text=${encodedMsg}`;
         window.open(whatsappUrl, '_blank');
       } catch(e) {
-        console.log('WhatsApp open karne mein issue');
+        console.log('Unable to open WhatsApp.');
       }
     })
     .catch(err=>{
@@ -3486,6 +3514,69 @@ function numberToWords(num, currency='INR'){
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+
+/* ============================= LISTING MANAGER ============================= */
+const LISTING_PLATFORMS = ['Website .com','Website .in','Amazon','Etsy','IndiaMART','Myntra','eBay','Other'];
+const LISTING_STATUSES = ['Active','Draft','Ready to Publish','Not Listed','Paused','Discontinued'];
+function listingStyle(l){ return DB.styles.find(s=>s.id===l.styleId) || {}; }
+function listingAccount(l){ return DB.listingAccounts.find(a=>a.id===l.accountId) || {}; }
+function listingThumbnail(l){ const s=listingStyle(l); return l.thumbnail || s.thumbnail || s.image || s.imageUrl || ''; }
+function listingCompletion(l){
+  const checks=[l.title,l.description,l.sku||listingStyle(l).sku,l.price!==''&&l.price!==undefined,l.platformUrl,listingThumbnail(l),l.mediaDriveUrl||listingStyle(l).mediaDriveUrl];
+  return Math.round(checks.filter(Boolean).length/checks.length*100);
+}
+function renderListingManager(){
+  const q=(window._listingQ||'').toLowerCase();
+  const pf=window._listingPlatform||'';
+  const st=window._listingStatus||'';
+  const ac=window._listingAccount||'';
+  const items=DB.listings.filter(l=>{
+    const m=!q || [l.sku,l.title,l.description,l.platform,l.status,listingStyle(l).name].some(v=>String(v||'').toLowerCase().includes(q));
+    return m && (!pf||l.platform===pf) && (!st||l.status===st) && (!ac||l.accountId===ac);
+  });
+  const stats={total:DB.listings.length,active:DB.listings.filter(x=>x.status==='Active').length,draft:DB.listings.filter(x=>x.status==='Draft'||x.status==='Ready to Publish').length,missing:DB.listings.filter(x=>listingCompletion(x)<100).length};
+  return `<div class="page-header"><div><h1 class="page-title">Listing Manager</h1><p class="page-sub">Manage product listings, platform-specific content and Google Drive media from one place.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" onclick="openListingAccountModal()">Manage Accounts</button><button class="btn btn-primary" onclick="openListingModal()">+ New Listing</button></div></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px">
+    <div class="panel" style="padding:15px"><div style="font-size:11px;color:var(--slate);text-transform:uppercase">Total Listings</div><div style="font-size:28px;font-weight:700">${stats.total}</div></div>
+    <div class="panel" style="padding:15px"><div style="font-size:11px;color:var(--slate);text-transform:uppercase">Active</div><div style="font-size:28px;font-weight:700">${stats.active}</div></div>
+    <div class="panel" style="padding:15px"><div style="font-size:11px;color:var(--slate);text-transform:uppercase">Draft / Ready</div><div style="font-size:28px;font-weight:700">${stats.draft}</div></div>
+    <div class="panel" style="padding:15px"><div style="font-size:11px;color:var(--slate);text-transform:uppercase">Needs Attention</div><div style="font-size:28px;font-weight:700">${stats.missing}</div></div>
+  </div>
+  <div class="panel" style="padding:14px;margin-bottom:18px"><div style="display:grid;grid-template-columns:2fr repeat(3,1fr);gap:10px;align-items:end"><div class="field"><label>Search SKU, style, title or platform</label><input value="${escapeHTML(window._listingQ||'')}" oninput="window._listingQ=this.value; render();" placeholder="CV-4, Amara, Amazon..."></div><div class="field"><label>Platform</label><select onchange="window._listingPlatform=this.value;render()"><option value="">All Platforms</option>${LISTING_PLATFORMS.map(x=>`<option ${pf===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Status</label><select onchange="window._listingStatus=this.value;render()"><option value="">All Statuses</option>${LISTING_STATUSES.map(x=>`<option ${st===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Account</label><select onchange="window._listingAccount=this.value;render()"><option value="">All Accounts</option>${DB.listingAccounts.map(a=>`<option value="${a.id}" ${ac===a.id?'selected':''}>${escapeHTML(a.platform+' · '+a.name)}</option>`).join('')}</select></div></div></div>
+  ${items.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px">${items.map(renderListingCard).join('')}</div>`:`<div class="empty-state"><div class="big">▤</div>No listings match the current filters.</div>`}`;
+}
+function renderListingCard(l){
+  const s=listingStyle(l), a=listingAccount(l), thumb=listingThumbnail(l), pct=listingCompletion(l);
+  return `<div class="card" style="overflow:hidden"><div style="height:190px;background:#f5f4f0;display:flex;align-items:center;justify-content:center;position:relative">${thumb?`<img src="${escapeHTML(thumb)}" style="width:100%;height:100%;object-fit:contain">`:`<div style="color:var(--slate);font-size:12px">No Thumbnail</div>`}<span style="position:absolute;top:10px;right:10px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:5px 9px;font-size:10px;font-weight:700">${escapeHTML(l.status||'Draft')}</span></div><div class="card-body"><div style="font-size:11px;color:var(--slate);margin-bottom:4px">${escapeHTML(l.sku||s.sku||'No SKU')} · ${escapeHTML(l.platform||'Other')}</div><div class="card-title">${escapeHTML(l.title||s.name||'Untitled Listing')}</div><div class="card-desc">${escapeHTML(s.name||'')}</div><div class="tag-row"><span class="tag">${escapeHTML(a.name||l.accountName||'No Account')}</span>${l.price!==''&&l.price!==undefined?`<span class="tag">${escapeHTML(l.currency||'USD')} ${escapeHTML(l.price)}</span>`:''}<span class="tag">${pct}% complete</span></div><div style="height:5px;background:#e8e7e2;border-radius:10px;overflow:hidden;margin:10px 0"><div style="width:${pct}%;height:100%;background:var(--gold)"></div></div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="viewListing('${l.id}')">View</button><button class="btn btn-ghost btn-sm" onclick="openListingModal('${l.id}')">Edit</button><button class="btn btn-ghost btn-sm" onclick="copyListing('${l.id}')">Copy</button><button class="btn btn-danger btn-sm" onclick="deleteListing('${l.id}')">Delete</button></div></div></div>`;
+}
+function openListingModal(id){
+  const l=id?DB.listings.find(x=>x.id===id):{id:null,styleId:'',platform:'Website .com',accountId:'',accountName:'',sku:'',title:'',description:'',shortDescription:'',category:'',productType:'',price:'',currency:'USD',status:'Draft',platformUrl:'',mediaDriveUrl:'',thumbnail:'',keywords:'',material:'',color:'',sizeInfo:'',careInstructions:'',countryOfOrigin:'India',notes:''};
+  window._listingEdit=JSON.parse(JSON.stringify(l)); renderListingModal();
+}
+function renderListingModal(){
+  const l=window._listingEdit, s=listingStyle(l), accs=DB.listingAccounts.filter(a=>!l.platform||a.platform===l.platform);
+  showModal(`<h2>${l.id?'Edit':'New'} Listing</h2><div class="field"><label>Style Master / SKU</label><select id="lm_style" onchange="prefillListingStyle(this.value)"><option value="">-- Select Style --</option>${DB.styles.map(x=>`<option value="${x.id}" ${l.styleId===x.id?'selected':''}>${escapeHTML(x.sku?x.sku+' · ':'')}${escapeHTML(x.name)}</option>`).join('')}</select></div><div class="field-row"><div class="field"><label>Platform</label><select id="lm_platform" onchange="listingPlatformChanged(this.value)">${LISTING_PLATFORMS.map(x=>`<option ${l.platform===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Account</label><select id="lm_account"><option value="">-- Select Account --</option>${accs.map(a=>`<option value="${a.id}" ${l.accountId===a.id?'selected':''}>${escapeHTML(a.name)}</option>`).join('')}</select></div></div><div class="field-row"><div class="field"><label>Listing SKU</label><input id="lm_sku" value="${escapeHTML(l.sku||s.sku||'')}"></div><div class="field"><label>Status</label><select id="lm_status">${LISTING_STATUSES.map(x=>`<option ${l.status===x?'selected':''}>${x}</option>`).join('')}</select></div></div><div class="field"><label>Product Title</label><input id="lm_title" value="${escapeHTML(l.title||s.name||'')}"></div><div class="field"><label>Platform Description</label><textarea id="lm_desc" rows="6">${escapeHTML(l.description||s.description||'')}</textarea></div><div class="field"><label>Short Description</label><textarea id="lm_short" rows="3">${escapeHTML(l.shortDescription||'')}</textarea></div><div class="field-row"><div class="field"><label>Price</label><input type="number" step="0.01" id="lm_price" value="${escapeHTML(l.price??'')}"></div><div class="field"><label>Currency</label><select id="lm_currency"><option ${l.currency==='USD'?'selected':''}>USD</option><option ${l.currency==='INR'?'selected':''}>INR</option><option ${l.currency==='GBP'?'selected':''}>GBP</option><option ${l.currency==='EUR'?'selected':''}>EUR</option></select></div></div><div class="field-row"><div class="field"><label>Product Type</label><input id="lm_type" value="${escapeHTML(l.productType||s.productType||'')}"></div><div class="field"><label>Category</label><input id="lm_category" value="${escapeHTML(l.category||'')}"></div></div><div class="field-row"><div class="field"><label>Material / Fabric</label><input id="lm_material" value="${escapeHTML(l.material||s.fabric||'')}"></div><div class="field"><label>Color</label><input id="lm_color" value="${escapeHTML(l.color||'')}"></div></div><div class="field-row"><div class="field"><label>Size Information</label><input id="lm_size" value="${escapeHTML(l.sizeInfo||s.size||'')}"></div><div class="field"><label>Country of Origin</label><input id="lm_origin" value="${escapeHTML(l.countryOfOrigin||'India')}"></div></div><div class="field"><label>Keywords / Tags</label><input id="lm_keywords" value="${escapeHTML(l.keywords||'')}" placeholder="steel boned, corset, waist trainer"></div><div class="field-row"><div class="field"><label>Listing URL</label><input type="url" id="lm_url" value="${escapeHTML(l.platformUrl||'')}"></div><div class="field"><label>Google Drive Media Folder</label><input type="url" id="lm_drive" value="${escapeHTML(l.mediaDriveUrl||s.mediaDriveUrl||'')}"></div></div><div class="field"><label>Thumbnail Image</label><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><input type="file" id="lm_thumb_file" accept="image/*" onchange="handleListingThumbnail(event)" style="max-width:280px"><img id="lm_thumb_preview" src="${escapeHTML(l.thumbnail||s.thumbnail||s.imageUrl||s.image||'')}" style="${(l.thumbnail||s.thumbnail||s.imageUrl||s.image)?'display:block;':'display:none;'}width:70px;height:70px;object-fit:contain;border:1px solid var(--line);border-radius:6px"></div><div style="font-size:11px;color:var(--slate);margin-top:5px">Small compressed image only; full-size media stays in Google Drive.</div></div><div class="field"><label>Thumbnail Image URL (optional)</label><input type="url" id="lm_thumb" value="${escapeHTML(l.thumbnail||s.thumbnail||s.imageUrl||'')}" placeholder="Use a lightweight image URL or leave blank to use Style Master thumbnail"></div><div class="field"><label>Care Instructions</label><textarea id="lm_care" rows="2">${escapeHTML(l.careInstructions||'')}</textarea></div><div class="field"><label>Notes</label><textarea id="lm_notes" rows="2">${escapeHTML(l.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveListing()">Save Listing</button></div>`);
+}
+function handleListingThumbnail(ev){ const file=ev.target.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=e=>{const img=new Image();img.onload=()=>{const maxW=420,scale=Math.min(1,maxW/img.width),c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);const data=c.toDataURL('image/jpeg',0.72);window._listingEdit.thumbnail=data;const p=document.getElementById('lm_thumb_preview');if(p){p.src=data;p.style.display='block';}const u=document.getElementById('lm_thumb');if(u)u.value='';};img.src=e.target.result;};reader.readAsDataURL(file); }
+function prefillListingStyle(styleId){ const s=DB.styles.find(x=>x.id===styleId)||{}; const set=(id,val)=>{const e=document.getElementById(id);if(e&&(!e.value||id==='lm_sku'))e.value=val||'';}; set('lm_sku',s.sku);set('lm_title',s.name);set('lm_desc',s.description);set('lm_material',s.fabric);set('lm_size',s.size);set('lm_drive',s.mediaDriveUrl);set('lm_thumb',s.thumbnail||s.imageUrl||''); }
+function listingPlatformChanged(platform){ const old=window._listingEdit; old.platform=platform; old.accountId=''; renderListingModal(); }
+function saveListing(){
+  const styleId=document.getElementById('lm_style').value; if(!styleId){alert('Select a Style Master product.');return;}
+  const accountId=document.getElementById('lm_account').value, account=DB.listingAccounts.find(a=>a.id===accountId);
+  const data={...window._listingEdit,styleId,platform:document.getElementById('lm_platform').value,accountId,accountName:account?.name||'',sku:document.getElementById('lm_sku').value.trim(),status:document.getElementById('lm_status').value,title:document.getElementById('lm_title').value.trim(),description:document.getElementById('lm_desc').value.trim(),shortDescription:document.getElementById('lm_short').value.trim(),price:document.getElementById('lm_price').value===''?'':Number(document.getElementById('lm_price').value),currency:document.getElementById('lm_currency').value,productType:document.getElementById('lm_type').value.trim(),category:document.getElementById('lm_category').value.trim(),material:document.getElementById('lm_material').value.trim(),color:document.getElementById('lm_color').value.trim(),sizeInfo:document.getElementById('lm_size').value.trim(),countryOfOrigin:document.getElementById('lm_origin').value.trim(),keywords:document.getElementById('lm_keywords').value.trim(),platformUrl:document.getElementById('lm_url').value.trim(),mediaDriveUrl:document.getElementById('lm_drive').value.trim(),thumbnail:document.getElementById('lm_thumb').value.trim(),careInstructions:document.getElementById('lm_care').value.trim(),notes:document.getElementById('lm_notes').value.trim(),updatedAt:Date.now(),updatedBy:currentUser?.email||''};
+  if(!data.title){alert('Enter a product title.');return;} const ref=data.id?db.collection('listings').doc(data.id):db.collection('listings').doc(); if(!data.id)data.createdAt=Date.now(); delete data.id; ref.set(data,{merge:true}).then(()=>{closeModal();navigate('listings');}).catch(e=>alert('Listing save failed: '+e.message));
+}
+function viewListing(id){window._viewingListingId=id;navigate('listingdetail');}
+function renderListingDetail(id){ const l=DB.listings.find(x=>x.id===id); if(!l)return `<div class="empty-state">Listing not found.</div>`; const s=listingStyle(l),a=listingAccount(l),thumb=listingThumbnail(l),pct=listingCompletion(l); return `<div class="page-header"><div><button class="btn btn-ghost btn-sm" onclick="navigate('listings')">← Listing Manager</button><h1 class="page-title" style="margin-top:10px">${escapeHTML(l.title||s.name)}</h1><p class="page-sub">${escapeHTML(l.sku||s.sku||'No SKU')} · ${escapeHTML(l.platform||'')}</p></div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="openListingModal('${l.id}')">Edit</button><button class="btn btn-primary" onclick="copyListing('${l.id}')">Copy Listing</button></div></div><div class="field-row"><div class="panel" style="padding:18px"><div style="height:330px;background:#f5f4f0;display:flex;align-items:center;justify-content:center;border-radius:8px">${thumb?`<img src="${escapeHTML(thumb)}" style="max-width:100%;max-height:100%;object-fit:contain">`:'No Thumbnail'}</div><div style="margin-top:14px"><b>Media</b><p style="font-size:12px;color:var(--slate)">Full-size images and videos should remain in Google Drive.</p>${l.mediaDriveUrl||s.mediaDriveUrl?`<a class="btn btn-ghost btn-sm" target="_blank" href="${escapeHTML(l.mediaDriveUrl||s.mediaDriveUrl)}">Open Google Drive Media</a>`:''}</div></div><div class="panel" style="padding:18px"><div class="tag-row"><span class="tag">${escapeHTML(l.status||'Draft')}</span><span class="tag">${escapeHTML(l.platform||'')}</span><span class="tag">${escapeHTML(a.name||l.accountName||'No Account')}</span></div><h3>Listing Details</h3><div class="summary-row"><span>SKU</span><b>${escapeHTML(l.sku||s.sku||'-')}</b></div><div class="summary-row"><span>Price</span><b>${escapeHTML(l.currency||'USD')} ${escapeHTML(l.price??'-')}</b></div><div class="summary-row"><span>Product Type</span><b>${escapeHTML(l.productType||'-')}</b></div><div class="summary-row"><span>Category</span><b>${escapeHTML(l.category||'-')}</b></div><div class="summary-row"><span>Material</span><b>${escapeHTML(l.material||s.fabric||'-')}</b></div><div class="summary-row"><span>Size</span><b>${escapeHTML(l.sizeInfo||s.size||'-')}</b></div><div class="summary-row"><span>Completion</span><b>${pct}%</b></div><h3 style="margin-top:18px">Description</h3><p style="white-space:pre-wrap;line-height:1.6;font-size:13px">${escapeHTML(l.description||'-')}</p>${l.platformUrl?`<a target="_blank" href="${escapeHTML(l.platformUrl)}" class="btn btn-primary btn-sm">Open Listing</a>`:''}</div></div>`; }
+function copyListing(id){ const l=DB.listings.find(x=>x.id===id); if(!l)return; window._listingEdit=JSON.parse(JSON.stringify(l)); window._listingEdit.id=null; window._listingEdit.status='Draft'; window._listingEdit.platformUrl=''; window._listingEdit.platform=''; window._listingEdit.accountId=''; window._listingEdit.accountName=''; renderListingModal(); }
+function deleteListing(id){if(!confirm('Delete this listing?'))return;db.collection('listings').doc(id).delete().catch(e=>alert('Delete failed: '+e.message));}
+function openListingAccountModal(){ window._accountEdit={id:null,platform:'Website .com',name:'',email:'',storeId:'',url:'',notes:'',active:true}; renderListingAccountModal(); }
+function editListingAccount(id){const a=DB.listingAccounts.find(x=>x.id===id);window._accountEdit=JSON.parse(JSON.stringify(a));renderListingAccountModal();}
+function renderListingAccountModal(){const a=window._accountEdit;showModal(`<h2>${a.id?'Edit':'Manage'} Listing Accounts</h2><div class="field-row"><div class="field"><label>Platform</label><select id="ac_platform">${LISTING_PLATFORMS.map(x=>`<option ${a.platform===x?'selected':''}>${x}</option>`).join('')}</select></div><div class="field"><label>Account / Store Name</label><input id="ac_name" value="${escapeHTML(a.name||'')}" placeholder="Corset Vogue Amazon US"></div></div><div class="field-row"><div class="field"><label>Email / Login Identifier</label><input id="ac_email" value="${escapeHTML(a.email||'')}" placeholder="account@example.com"></div><div class="field"><label>Store / Seller ID</label><input id="ac_store" value="${escapeHTML(a.storeId||'')}"></div></div><div class="field"><label>Platform URL</label><input id="ac_url" value="${escapeHTML(a.url||'')}" placeholder="https://..."></div><div class="field"><label>Notes</label><textarea id="ac_notes">${escapeHTML(a.notes||'')}</textarea></div><label style="display:flex;gap:8px;align-items:center;margin:10px 0"><input type="checkbox" id="ac_active" ${a.active!==false?'checked':''}> Active account</label><div class="modal-actions"><button class="btn btn-ghost" onclick="showListingAccountList()">View Accounts</button><button class="btn btn-primary" onclick="saveListingAccount()">Save Account</button></div>`); }
+function saveListingAccount(){const a=window._accountEdit;const data={...a,platform:document.getElementById('ac_platform').value,name:document.getElementById('ac_name').value.trim(),email:document.getElementById('ac_email').value.trim(),storeId:document.getElementById('ac_store').value.trim(),url:document.getElementById('ac_url').value.trim(),notes:document.getElementById('ac_notes').value.trim(),active:document.getElementById('ac_active').checked,updatedAt:Date.now()};if(!data.name){alert('Enter an account name.');return;}const ref=a.id?db.collection('listingAccounts').doc(a.id):db.collection('listingAccounts').doc();if(!a.id)data.createdAt=Date.now();delete data.id;ref.set(data,{merge:true}).then(()=>showListingAccountList()).catch(e=>alert('Account save failed: '+e.message));}
+function deleteListingAccount(id){if(!confirm('Delete this listing account?'))return;db.collection('listingAccounts').doc(id).delete().then(()=>showListingAccountList()).catch(e=>alert('Account delete failed: '+e.message));}
+function showListingAccountList(){showModal(`<h2>Listing Accounts</h2>${DB.listingAccounts.length?`<div style="display:grid;gap:10px">${DB.listingAccounts.map(a=>`<div class="panel" style="padding:12px;display:flex;justify-content:space-between;gap:12px;align-items:center"><div><b>${escapeHTML(a.name)}</b><div style="font-size:11px;color:var(--slate)">${escapeHTML(a.platform)} · ${escapeHTML(a.email||'')} · ${a.active===false?'Inactive':'Active'}</div></div><button class="btn btn-ghost btn-sm" onclick="editListingAccount('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteListingAccount('${a.id}')">Delete</button></div>`).join('')}</div>`:'<div class="empty-state" style="padding:25px">No listing accounts added yet.</div>'}<div class="modal-actions"><button class="btn btn-ghost" onclick="openListingAccountModal()">+ Add Account</button><button class="btn btn-primary" onclick="closeModal()">Close</button></div>`);}
+
 /* ============================= SEARCH ============================= */
 function performSearch(query){
   if(!query.trim()){
@@ -3525,7 +3616,7 @@ function performSearch(query){
 }
 
 function renderSearchResults(results){
-  if(!results.length) return `<div class="empty-state" style="margin-top:40px;"><div class="big">🔍</div>Kuch nahi mila. Dubara try karein.</div>`;
+  if(!results.length) return `<div class="empty-state" style="margin-top:40px;"><div class="big">🔍</div>No results found. Try another search.</div>`;
   
   const grouped = { style:[], invoice:[], client:[] };
   results.forEach(r=>{ if(grouped[r.type]) grouped[r.type].push(r); });
@@ -3616,41 +3707,64 @@ function renderCostingList(){
   items.sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0));
   return `<div class="page-header"><div><h1 class="page-title">Detailed Costing</h1><p class="page-sub">Client-wise material, vendor, labour, overhead and selling-price costing</p></div><button class="btn btn-primary" onclick="startNewCosting()">+ New Costing</button></div>
   <div class="panel" style="padding:14px;margin-bottom:18px;display:flex;gap:12px;flex-wrap:wrap;align-items:end;"><div class="field" style="min-width:220px;margin:0"><label>Client</label><select onchange="window._costingClient=this.value;render()"><option value="">All Clients</option>${DB.clients.map(c=>`<option value="${c.id}" ${clientId===c.id?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}</select></div><div class="field" style="min-width:260px;margin:0"><label>Search</label><input value="${escapeHTML(window._costingSearch||'')}" placeholder="Style / client / notes" oninput="window._costingSearch=this.value;render()"></div></div>
-  ${items.length?`<div class="grid">${items.map(c=>{const client=DB.clients.find(x=>x.id===c.clientId);return `<div class="card"><div class="card-body"><div class="tag-row"><span class="tag">${escapeHTML(client?.name||c.clientName||'No Client')}</span>${c.locked?'<span class="tag">🔒 Locked</span>':''}</div><h3 class="card-title">${escapeHTML(c.styleName||'Untitled Style')}</h3><div style="font-size:12px;color:var(--slate);margin-bottom:8px;">${(c.items||[]).length} material/service lines</div><div class="card-cost">₹${money(c.totalCost)} <span style="font-size:12px;color:var(--slate);">/ $${money(c.sellingUSD||0)}</span></div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="viewCosting('${c.id}')">View</button><button class="btn btn-ghost btn-sm" onclick="editCosting('${c.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteCosting('${c.id}')">Delete</button></div></div></div>`}).join('')}</div>`:`<div class="empty-state"><div class="big">₹</div>No detailed costing found. Create your first client-wise costing.</div>`}`;
+  ${items.length?`<div class="grid">${items.map(c=>{const client=DB.clients.find(x=>x.id===c.clientId);return `<div class="card">${c.image?`<div style="height:190px;background:#fafafa;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--border)"><img src="${c.image}" style="max-width:100%;max-height:100%;object-fit:contain"></div>`:''}<div class="card-body"><div class="tag-row"><span class="tag">${escapeHTML(client?.name||c.clientName||'No Client')}</span>${c.locked?'<span class="tag">🔒 Locked</span>':''}</div><h3 class="card-title">${escapeHTML(c.styleName||'Untitled Style')}</h3><div style="font-size:12px;color:var(--slate);margin-bottom:8px;">${(c.items||[]).length} material/service lines</div><div class="card-cost">₹${money(c.totalCost)} <span style="font-size:12px;color:var(--slate);">/ $${money(c.sellingUSD||0)}</span></div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="viewCosting('${c.id}')">View</button><button class="btn btn-ghost btn-sm" onclick="editCosting('${c.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteCosting('${c.id}')">Delete</button></div></div></div>`}).join('')}</div>`:`<div class="empty-state"><div class="big">₹</div>No detailed costing found. Create your first client-wise costing.</div>`}`;
 }
 function startNewCosting(clientId='',styleId=''){
-  newCostingState={id:null,clientId:clientId||DB.clients[0]?.id||'',styleId:styleId||'',styleName:'',items:[],labourHours:0,labourRate:0,packing:0,overhead:0,shipping:0,other:0,markup:20,usdRate:DB.settings.usdRate||83,notes:'',locked:false};
+  const selectedStyle = styleId ? DB.styles.find(x=>x.id===styleId) : null;
+  newCostingState={id:null,clientId:clientId||DB.clients[0]?.id||'',styleId:styleId||'',styleName:selectedStyle?.name||'',image:selectedStyle?.image||selectedStyle?.imageUrl||'',items:[],labourHours:0,labourRate:0,packing:0,overhead:0,shipping:0,other:0,markup:20,usdRate:DB.settings.usdRate||83,notes:'',locked:false};
   navigate('newcosting');
 }
-function editCosting(id){const c=DB.costings.find(x=>x.id===id);if(!c)return;if(c.locked&&!confirm('Ye costing locked hai. Unlock karke edit karna hai?'))return;newCostingState=JSON.parse(JSON.stringify(c));newCostingState.locked=false;navigate('newcosting');}
+function handleCostingImagePreview(ev){
+  const file=ev.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=new Image();
+    img.onload=function(){
+      const canvas=document.createElement('canvas');
+      const maxW=800;
+      const scale=Math.min(1,maxW/img.width);
+      canvas.width=Math.max(1,Math.round(img.width*scale));
+      canvas.height=Math.max(1,Math.round(img.height*scale));
+      const ctx=canvas.getContext('2d');
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      newCostingState.image=canvas.toDataURL('image/jpeg',0.82);
+      render();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removeCostingImage(){newCostingState.image='';render();}
+function editCosting(id){const c=DB.costings.find(x=>x.id===id);if(!c)return;if(c.locked&&!confirm('This costing is locked. Unlock it to edit?'))return;newCostingState=JSON.parse(JSON.stringify(c));newCostingState.locked=false;navigate('newcosting');}
 function viewCosting(id){window._viewingCostingId=id;navigate('viewcosting');}
 function addCostingRow(){newCostingState.items.push({material:'',category:'Material',unit:'meter',qty:1,wastage:5,rate:0,vendorId:'',notes:''});render();}
 function removeCostingRow(i){newCostingState.items.splice(i,1);render();}
 function updateCostingField(field,val){newCostingState[field]=val;render();}
 function updateCostingRow(i,field,val){newCostingState.items[i][field]=val;if(field==='vendorId' || field==='material'){const r=vendorRateFor(newCostingState.items[i].material,newCostingState.items[i].vendorId);if(r)newCostingState.items[i].rate=r;}render();}
-function renderCostingBuilder(){const st=newCostingState;if(!st)return startNewCosting();const selectedStyle=DB.styles.find(x=>x.id===st.styleId);if(selectedStyle&&!st.styleName)st.styleName=selectedStyle.name;
+function renderCostingBuilder(){const st=newCostingState;if(!st)return startNewCosting();const selectedStyle=DB.styles.find(x=>x.id===st.styleId);if(selectedStyle&&!st.styleName)st.styleName=selectedStyle.name;if(selectedStyle&&!st.image)st.image=selectedStyle.image||selectedStyle.imageUrl||'';
   const materialTotal=st.items.reduce((a,it)=>a+costingItemTotal(it),0), labour=(Number(st.labourHours)||0)*(Number(st.labourRate)||0), extra=(Number(st.packing)||0)+(Number(st.overhead)||0)+(Number(st.shipping)||0)+(Number(st.other)||0), total=materialTotal+labour+extra, selling=total*(1+(Number(st.markup)||0)/100), sellingUSD=selling/(Number(st.usdRate)||83);
   return `<div class="page-header"><div><button class="btn btn-ghost btn-sm" onclick="navigate('costing')">← Costings</button><h1 class="page-title" style="margin-top:10px;">${st.id?'Edit':'New'} Detailed Costing</h1><p class="page-sub">Actual cost + vendor rates + selling price</p></div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="newCostingState=null;navigate('costing')">Cancel</button><button class="btn btn-primary" onclick="saveCosting()">${st.id?'Update':'Save'} Costing</button></div></div>
-  <div class="panel" style="padding:16px;margin-bottom:18px"><div class="field-row"><div class="field"><label>Client</label><select onchange="updateCostingField('clientId',this.value)">${DB.clients.map(c=>`<option value="${c.id}" ${st.clientId===c.id?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}</select></div><div class="field"><label>Style</label><select onchange="newCostingState.styleId=this.value;newCostingState.styleName=(DB.styles.find(x=>x.id===this.value)||{}).name||'';render()"><option value="">-- Select Style --</option>${DB.styles.filter(x=>!x.clientId||x.clientId===st.clientId).map(x=>`<option value="${x.id}" ${st.styleId===x.id?'selected':''}>${escapeHTML(x.name)}</option>`).join('')}</select></div></div><div class="field"><label>Style Name / Costing Name</label><input value="${escapeHTML(st.styleName||'')}" oninput="newCostingState.styleName=this.value"></div></div>
+  <div class="panel" style="padding:16px;margin-bottom:18px"><div class="field-row"><div class="field"><label>Client</label><select onchange="updateCostingField('clientId',this.value)">${DB.clients.map(c=>`<option value="${c.id}" ${st.clientId===c.id?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}</select></div><div class="field"><label>Style</label><select onchange="newCostingState.styleId=this.value;newCostingState.styleName=(DB.styles.find(x=>x.id===this.value)||{}).name||'';newCostingState.image=(DB.styles.find(x=>x.id===this.value)||{}).image||(DB.styles.find(x=>x.id===this.value)||{}).imageUrl||'';render()"><option value="">-- Select Style --</option>${DB.styles.filter(x=>!x.clientId||x.clientId===st.clientId).map(x=>`<option value="${x.id}" ${st.styleId===x.id?'selected':''}>${escapeHTML(x.name)}</option>`).join('')}</select></div></div><div class="field"><label>Style Name / Costing Name</label><input value="${escapeHTML(st.styleName||'')}" oninput="newCostingState.styleName=this.value"></div><div style="margin-top:14px"><label style="display:block;font-weight:600;margin-bottom:7px">Style Image</label><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="width:120px;height:150px;border:1px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fafafa">${st.image?`<img src="${st.image}" style="max-width:100%;max-height:100%;object-fit:contain">`:'<span style="font-size:12px;color:var(--slate);text-align:center;padding:10px">No image</span>'}</div><div><input type="file" id="costingImageFile" accept="image/*" onchange="handleCostingImagePreview(event)"><div style="font-size:11px;color:var(--slate);margin-top:6px">Upload a style image. If a selected style already has an image, it is loaded automatically.</div>${st.image?'<button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="removeCostingImage()">Remove Image</button>':''}</div></div></div></div>
   <div class="panel" style="padding:16px;margin-bottom:18px;overflow:auto"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><h3 style="margin:0">Materials & Services</h3><div style="font-size:11px;color:var(--slate)">Vendor rate can auto-fill; wastage is applied only where entered.</div></div><button class="btn btn-ghost btn-sm" onclick="addCostingRow()">+ Add Line</button></div><table><thead><tr><th>Material / Service</th><th>Category</th><th>Vendor</th><th>Unit</th><th>Qty</th><th>Wastage %</th><th>Unit Cost ₹</th><th>Total ₹</th><th></th></tr></thead><tbody>${st.items.map((it,i)=>`<tr><td style="min-width:170px"><input value="${escapeHTML(it.material||'')}" list="costingMaterials" onchange="updateCostingRow(${i},'material',this.value)" oninput="newCostingState.items[${i}].material=this.value"><datalist id="costingMaterials">${costingMaterialOptions(it.material)}</datalist></td><td><select onchange="updateCostingRow(${i},'category',this.value)"><option ${it.category==='Material'?'selected':''}>Material</option><option ${it.category==='Service'?'selected':''}>Service</option><option ${it.category==='Trim'?'selected':''}>Trim</option><option ${it.category==='Other'?'selected':''}>Other</option></select></td><td style="min-width:160px"><select onchange="updateCostingRow(${i},'vendorId',this.value)"><option value="">-- Vendor --</option>${DB.vendors.map(v=>`<option value="${v.id}" ${it.vendorId===v.id?'selected':''}>${escapeHTML(v.name)}</option>`).join('')}</select></td><td><select onchange="updateCostingRow(${i},'unit',this.value)">${['meter','yard','kg','gram','piece','pair','dozen','hour','custom'].map(u=>`<option value="${u}" ${it.unit===u?'selected':''}>${u}</option>`).join('')}</select></td><td><input type="number" step="0.001" value="${it.qty||0}" onchange="updateCostingRow(${i},'qty',this.value)"></td><td><input type="number" step="0.01" value="${it.wastage||0}" onchange="updateCostingRow(${i},'wastage',this.value)"></td><td><input type="number" step="0.01" value="${it.rate||0}" onchange="updateCostingRow(${i},'rate',this.value)"></td><td class="mono">₹${money(costingItemTotal(it))}</td><td><button class="btn btn-danger btn-sm" onclick="removeCostingRow(${i})">×</button></td></tr>`).join('')}</tbody></table><div style="text-align:right;font-weight:700;margin-top:12px">Material / Service Total: ₹${money(materialTotal)}</div></div>
   <div class="field-row"><div class="panel" style="padding:16px"><h3>Labour</h3><div class="field-row"><div class="field"><label>Hours</label><input type="number" step="0.25" value="${st.labourHours||0}" onchange="updateCostingField('labourHours',this.value)"></div><div class="field"><label>Rate / Hour ₹</label><input type="number" step="0.01" value="${st.labourRate||0}" onchange="updateCostingField('labourRate',this.value)"></div></div><div class="summary-row total"><span>Labour</span><span>₹${money(labour)}</span></div></div><div class="panel" style="padding:16px"><h3>Other Costs</h3><div class="field-row"><div class="field"><label>Packaging ₹</label><input type="number" value="${st.packing||0}" onchange="updateCostingField('packing',this.value)"></div><div class="field"><label>Overhead ₹</label><input type="number" value="${st.overhead||0}" onchange="updateCostingField('overhead',this.value)"></div></div><div class="field-row"><div class="field"><label>Shipping ₹</label><input type="number" value="${st.shipping||0}" onchange="updateCostingField('shipping',this.value)"></div><div class="field"><label>Other ₹</label><input type="number" value="${st.other||0}" onchange="updateCostingField('other',this.value)"></div></div></div></div>
   <div class="panel" style="padding:18px;margin-top:18px"><h3>Final Cost & Selling Price</h3><div class="field-row"><div class="field"><label>Markup %</label><input type="number" step="0.1" value="${st.markup||0}" onchange="updateCostingField('markup',this.value)"></div><div class="field"><label>USD Rate</label><input type="number" step="0.01" value="${st.usdRate||83}" onchange="updateCostingField('usdRate',this.value)"></div></div><div class="summary-row"><span>Material / Service</span><span>₹${money(materialTotal)}</span></div><div class="summary-row"><span>Labour</span><span>₹${money(labour)}</span></div><div class="summary-row"><span>Other Costs</span><span>₹${money(extra)}</span></div><div class="summary-row total"><span>ACTUAL TOTAL COST</span><span>₹${money(total)}</span></div><div class="summary-row"><span>Markup (${Number(st.markup)||0}%)</span><span>₹${money(selling-total)}</span></div><div class="summary-row total"><span>SELLING PRICE</span><span>₹${money(selling)} / $${money(sellingUSD)}</span></div><div class="field" style="margin-top:12px"><label>Notes</label><textarea oninput="newCostingState.notes=this.value" placeholder="Supplier quality, fitting notes, special processing...">${escapeHTML(st.notes||'')}</textarea></div><label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px"><input type="checkbox" ${st.locked?'checked':''} onchange="newCostingState.locked=this.checked"> 🔒 Lock this costing after saving</label></div>`;
 }
-function saveCosting(){const st=newCostingState;if(!st.clientId){alert('Client select karein');return;}if(!st.styleName){alert('Style / costing name daaliye');return;}const client=DB.clients.find(c=>c.id===st.clientId);const materialTotal=st.items.reduce((a,it)=>a+costingItemTotal(it),0),labour=(Number(st.labourHours)||0)*(Number(st.labourRate)||0),extra=(Number(st.packing)||0)+(Number(st.overhead)||0)+(Number(st.shipping)||0)+(Number(st.other)||0),total=materialTotal+labour+extra,selling=total*(1+(Number(st.markup)||0)/100);const data={...st,clientName:client?.name||'',materialTotal,labourTotal:labour,otherTotal:extra,totalCost:total,sellingINR:selling,sellingUSD:selling/(Number(st.usdRate)||83),updatedAt:Date.now(),updatedBy:currentUser?.email||''};delete data.id;const ref=st.id?db.collection('costings').doc(st.id):db.collection('costings').doc();if(st.id)data.createdAt=st.createdAt||Date.now();else data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{newCostingState=null;navigate('costing');}).catch(e=>alert('Costing save fail: '+e.message));}
-function deleteCosting(id){if(!confirm('Ye costing delete kar doon?'))return;db.collection('costings').doc(id).delete().catch(e=>alert('Delete fail: '+e.message));}
-function renderCostingView(id){const c=DB.costings.find(x=>x.id===id);if(!c)return '<div class="empty-state">Costing not found</div>';const client=DB.clients.find(x=>x.id===c.clientId);return `<div class="page-header"><div><button class="btn btn-ghost btn-sm" onclick="navigate('costing')">← Costings</button><h1 class="page-title" style="margin-top:10px">${escapeHTML(c.styleName)}</h1><p class="page-sub">${escapeHTML(client?.name||c.clientName||'')}</p></div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="editCosting('${c.id}')">Edit</button><button class="btn btn-primary" onclick="printCosting('${c.id}')">Print / PDF</button></div></div><div id="costingPrintArea" class="panel" style="padding:20px"><div class="tag-row"><span class="tag">${escapeHTML(client?.name||c.clientName||'No Client')}</span>${c.locked?'<span class="tag">🔒 Locked</span>':''}</div><table style="margin-top:16px"><thead><tr><th>Material / Service</th><th>Vendor</th><th>Qty</th><th>Wastage</th><th>Rate</th><th>Total</th></tr></thead><tbody>${(c.items||[]).map(it=>`<tr><td>${escapeHTML(it.material||'')}</td><td>${escapeHTML((DB.vendors.find(v=>v.id===it.vendorId)||{}).name||'-')}</td><td>${it.qty||0} ${escapeHTML(it.unit||'')}</td><td>${it.wastage||0}%</td><td>₹${money(it.rate)}</td><td>₹${money(costingItemTotal(it))}</td></tr>`).join('')}</tbody></table><div style="max-width:480px;margin:18px 0 0 auto"><div class="summary-row"><span>Material / Service</span><span>₹${money(c.materialTotal)}</span></div><div class="summary-row"><span>Labour</span><span>₹${money(c.labourTotal)}</span></div><div class="summary-row"><span>Other Costs</span><span>₹${money(c.otherTotal)}</span></div><div class="summary-row total"><span>Actual Cost</span><span>₹${money(c.totalCost)}</span></div><div class="summary-row"><span>Markup</span><span>${c.markup||0}%</span></div><div class="summary-row total"><span>Selling Price</span><span>₹${money(c.sellingINR)} / $${money(c.sellingUSD)}</span></div></div>${c.notes?`<div style="margin-top:20px"><b>Notes</b><p>${escapeHTML(c.notes)}</p></div>`:''}</div>`;}
+function saveCosting(){const st=newCostingState;if(!st.clientId){alert('Select a client.');return;}if(!st.styleName){alert('Enter a style or costing name.');return;}const client=DB.clients.find(c=>c.id===st.clientId);const materialTotal=st.items.reduce((a,it)=>a+costingItemTotal(it),0),labour=(Number(st.labourHours)||0)*(Number(st.labourRate)||0),extra=(Number(st.packing)||0)+(Number(st.overhead)||0)+(Number(st.shipping)||0)+(Number(st.other)||0),total=materialTotal+labour+extra,selling=total*(1+(Number(st.markup)||0)/100);const data={...st,clientName:client?.name||'',materialTotal,labourTotal:labour,otherTotal:extra,totalCost:total,sellingINR:selling,sellingUSD:selling/(Number(st.usdRate)||83),updatedAt:Date.now(),updatedBy:currentUser?.email||''};delete data.id;const ref=st.id?db.collection('costings').doc(st.id):db.collection('costings').doc();if(st.id)data.createdAt=st.createdAt||Date.now();else data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{newCostingState=null;navigate('costing');}).catch(e=>alert('Costing save failed: '+e.message));}
+function deleteCosting(id){if(!confirm('Delete this costing?'))return;db.collection('costings').doc(id).delete().catch(e=>alert('Delete failed: '+e.message));}
+function renderCostingView(id){const c=DB.costings.find(x=>x.id===id);if(!c)return '<div class="empty-state">Costing not found</div>';const client=DB.clients.find(x=>x.id===c.clientId);return `<div class="page-header"><div><button class="btn btn-ghost btn-sm" onclick="navigate('costing')">← Costings</button><h1 class="page-title" style="margin-top:10px">${escapeHTML(c.styleName)}</h1><p class="page-sub">${escapeHTML(client?.name||c.clientName||'')}</p></div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="editCosting('${c.id}')">Edit</button><button class="btn btn-primary" onclick="printCosting('${c.id}')">Print / PDF</button></div></div><div id="costingPrintArea" class="panel" style="padding:20px"><div class="tag-row"><span class="tag">${escapeHTML(client?.name||c.clientName||'No Client')}</span>${c.locked?'<span class="tag">🔒 Locked</span>':''}</div>${c.image?`<div style="margin:16px 0;text-align:center"><img src="${c.image}" style="max-width:260px;max-height:320px;object-fit:contain;border:1px solid #ddd;border-radius:8px"></div>`:''}<table style="margin-top:16px"><thead><tr><th>Material / Service</th><th>Vendor</th><th>Qty</th><th>Wastage</th><th>Rate</th><th>Total</th></tr></thead><tbody>${(c.items||[]).map(it=>`<tr><td>${escapeHTML(it.material||'')}</td><td>${escapeHTML((DB.vendors.find(v=>v.id===it.vendorId)||{}).name||'-')}</td><td>${it.qty||0} ${escapeHTML(it.unit||'')}</td><td>${it.wastage||0}%</td><td>₹${money(it.rate)}</td><td>₹${money(costingItemTotal(it))}</td></tr>`).join('')}</tbody></table><div style="max-width:480px;margin:18px 0 0 auto"><div class="summary-row"><span>Material / Service</span><span>₹${money(c.materialTotal)}</span></div><div class="summary-row"><span>Labour</span><span>₹${money(c.labourTotal)}</span></div><div class="summary-row"><span>Other Costs</span><span>₹${money(c.otherTotal)}</span></div><div class="summary-row total"><span>Actual Cost</span><span>₹${money(c.totalCost)}</span></div><div class="summary-row"><span>Markup</span><span>${c.markup||0}%</span></div><div class="summary-row total"><span>Selling Price</span><span>₹${money(c.sellingINR)} / $${money(c.sellingUSD)}</span></div></div>${c.notes?`<div style="margin-top:20px"><b>Notes</b><p>${escapeHTML(c.notes)}</p></div>`:''}</div>`;}
 function printCosting(id){const c=DB.costings.find(x=>x.id===id);if(!c)return;const w=window.open('','_blank');w.document.write(`<html><head><title>Costing - ${escapeHTML(c.styleName)}</title><style>body{font-family:Arial;padding:30px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:left}.total{font-weight:bold}</style></head><body>${document.getElementById('costingPrintArea').innerHTML}</body></html>`);w.document.close();w.print();}
 
 /* ============================= VENDORS & RATES ============================= */
 function renderVendors(){return `<div class="page-header"><div><h1 class="page-title">Vendors & Suppliers</h1><p class="page-sub">Material suppliers, dyers, printers and service providers with their rates</p></div><button class="btn btn-primary" onclick="openVendorModal()">+ Add Vendor</button></div><div class="grid">${DB.vendors.map(v=>`<div class="card"><div class="card-body"><div class="tag-row"><span class="tag">${escapeHTML(v.type||'Material Supplier')}</span></div><h3 class="card-title">${escapeHTML(v.name)}</h3><div style="font-size:12px;color:var(--slate);margin-bottom:8px">${escapeHTML(v.contactPerson||'')}${v.phone?' · '+escapeHTML(v.phone):''}</div><div style="font-size:12px;margin-bottom:10px"><b>${(v.materials||[]).length}</b> materials · <b>${(v.services||[]).length}</b> services</div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="viewVendor('${v.id}')">View Rates</button><button class="btn btn-ghost btn-sm" onclick="openVendorModal('${v.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteVendor('${v.id}')">Delete</button></div></div></div>`).join('')}</div>${!DB.vendors.length?'<div class="empty-state"><div class="big">◉</div>No vendors yet. Add fabric, trim and processing suppliers.</div>':''}`;}
 function openVendorModal(id){const v=id?DB.vendors.find(x=>x.id===id):{id:null,name:'',type:'Material Supplier',contactPerson:'',phone:'',email:'',address:'',gst:'',paymentTerms:'',leadTime:'',notes:'',materials:[],services:[]};window._vendorEdit=JSON.parse(JSON.stringify(v));renderVendorModal();}
 function renderVendorModal(){const v=window._vendorEdit;showModal(`<h2>${v.id?'Edit':'Add'} Vendor</h2><div class="field-row"><div class="field"><label>Vendor Name</label><input id="vm_name" value="${escapeHTML(v.name)}"></div><div class="field"><label>Type</label><select id="vm_type"><option ${v.type==='Material Supplier'?'selected':''}>Material Supplier</option><option ${v.type==='Service Provider'?'selected':''}>Service Provider</option><option ${v.type==='Both'?'selected':''}>Both</option></select></div></div><div class="field-row"><div class="field"><label>Contact Person</label><input id="vm_contact" value="${escapeHTML(v.contactPerson||'')}"></div><div class="field"><label>Phone / WhatsApp</label><input id="vm_phone" value="${escapeHTML(v.phone||'')}"></div></div><div class="field-row"><div class="field"><label>Email</label><input id="vm_email" value="${escapeHTML(v.email||'')}"></div><div class="field"><label>GST</label><input id="vm_gst" value="${escapeHTML(v.gst||'')}"></div></div><div class="field"><label>Address</label><textarea id="vm_address">${escapeHTML(v.address||'')}</textarea></div><div class="field-row"><div class="field"><label>Payment Terms</label><input id="vm_payment" value="${escapeHTML(v.paymentTerms||'')}" placeholder="Advance / 30 days"></div><div class="field"><label>Lead Time</label><input id="vm_lead" value="${escapeHTML(v.leadTime||'')}" placeholder="3-5 days"></div></div><div class="field"><label>Notes</label><textarea id="vm_notes">${escapeHTML(v.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorModal()">Save Vendor</button></div>`);}
-function saveVendorModal(){const v=window._vendorEdit;const data={...v,name:document.getElementById('vm_name').value.trim(),type:document.getElementById('vm_type').value,contactPerson:document.getElementById('vm_contact').value.trim(),phone:document.getElementById('vm_phone').value.trim(),email:document.getElementById('vm_email').value.trim(),gst:document.getElementById('vm_gst').value.trim(),address:document.getElementById('vm_address').value.trim(),paymentTerms:document.getElementById('vm_payment').value.trim(),leadTime:document.getElementById('vm_lead').value.trim(),notes:document.getElementById('vm_notes').value.trim(),materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(!data.name){alert('Vendor name daaliye');return;}const ref=v.id?db.collection('vendors').doc(v.id):db.collection('vendors').doc();if(!v.id)data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{closeModal();render();}).catch(e=>alert('Vendor save fail: '+e.message));}
+function saveVendorModal(){const v=window._vendorEdit;const data={...v,name:document.getElementById('vm_name').value.trim(),type:document.getElementById('vm_type').value,contactPerson:document.getElementById('vm_contact').value.trim(),phone:document.getElementById('vm_phone').value.trim(),email:document.getElementById('vm_email').value.trim(),gst:document.getElementById('vm_gst').value.trim(),address:document.getElementById('vm_address').value.trim(),paymentTerms:document.getElementById('vm_payment').value.trim(),leadTime:document.getElementById('vm_lead').value.trim(),notes:document.getElementById('vm_notes').value.trim(),materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(!data.name){alert('Enter the vendor name.');return;}const ref=v.id?db.collection('vendors').doc(v.id):db.collection('vendors').doc();if(!v.id)data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{closeModal();render();}).catch(e=>alert('Vendor save failed: '+e.message));}
 function viewVendor(id){window._viewingVendorId=id;navigate('vendordetail');}
 function renderVendorDetail(id){const v=DB.vendors.find(x=>x.id===id);if(!v)return '<div class="empty-state">Vendor not found</div>';return `<div class="page-header"><div><button class="btn btn-ghost btn-sm" onclick="navigate('vendors')">← Vendors</button><h1 class="page-title" style="margin-top:10px">${escapeHTML(v.name)}</h1><p class="page-sub">${escapeHTML(v.type||'')}</p></div><button class="btn btn-primary" onclick="openVendorRateModal('${v.id}')">+ Add Material / Service Rate</button></div><div class="field-row"><div class="panel" style="padding:16px"><h3>Vendor Details</h3><p>${escapeHTML(v.contactPerson||'')}</p><p>${escapeHTML(v.phone||'')}</p><p>${escapeHTML(v.email||'')}</p><p>${escapeHTML(v.address||'')}</p><p>Payment: ${escapeHTML(v.paymentTerms||'-')} · Lead: ${escapeHTML(v.leadTime||'-')}</p></div><div class="panel" style="padding:16px"><h3>Notes</h3><p>${escapeHTML(v.notes||'-')}</p></div></div><div class="panel" style="padding:16px;margin-top:18px;overflow:auto"><h3>Material Rates</h3>${(v.materials||[]).length?`<table><thead><tr><th>Material</th><th>Quality / Spec</th><th>Unit</th><th>Rate ₹</th><th>MOQ</th><th>Preferred</th><th></th></tr></thead><tbody>${v.materials.map((m,i)=>`<tr><td><b>${escapeHTML(m.name)}</b></td><td>${escapeHTML(m.quality||'')}</td><td>${escapeHTML(m.unit||'')}</td><td>₹${money(m.rate)}</td><td>${escapeHTML(m.moq||'-')}</td><td>${m.preferred?'⭐':''}</td><td><button class="btn btn-ghost btn-sm" onclick="openVendorRateModal('${v.id}','material',${i})">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteVendorRate('${v.id}','material',${i})">Delete</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state" style="padding:25px">No material rates added.</div>'}</div><div class="panel" style="padding:16px;margin-top:18px;overflow:auto"><h3>Service Rates</h3>${(v.services||[]).length?`<table><thead><tr><th>Service</th><th>Material / Spec</th><th>Unit</th><th>Rate ₹</th><th>MOQ</th><th></th></tr></thead><tbody>${v.services.map((m,i)=>`<tr><td><b>${escapeHTML(m.name)}</b></td><td>${escapeHTML(m.quality||'')}</td><td>${escapeHTML(m.unit||'')}</td><td>₹${money(m.rate)}</td><td>${escapeHTML(m.moq||'-')}</td><td><button class="btn btn-ghost btn-sm" onclick="openVendorRateModal('${v.id}','service',${i})">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteVendorRate('${v.id}','service',${i})">Delete</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state" style="padding:25px">No service rates added.</div>'}</div>`;}
 function openVendorRateModal(vendorId,type='material',index=null){const v=DB.vendors.find(x=>x.id===vendorId);const arr=type==='service'?(v.services||[]):(v.materials||[]);const r=index!==null?arr[index]:{name:'',quality:'',unit:'meter',rate:0,moq:'',preferred:false,notes:''};window._vendorRateState={vendorId,type,index,data:JSON.parse(JSON.stringify(r))};const d=window._vendorRateState.data;showModal(`<h2>${index!==null?'Edit':'Add'} ${type==='service'?'Service':'Material'} Rate</h2><div class="field"><label>${type==='service'?'Service Name':'Material Name'}</label><input id="vr_name" value="${escapeHTML(d.name||'')}" placeholder="${type==='service'?'Fabric Printing / Dyeing':'Black Satin'}"></div><div class="field"><label>Quality / Specification</label><input id="vr_quality" value="${escapeHTML(d.quality||'')}" placeholder="120 GSM / Digital Print"></div><div class="field-row"><div class="field"><label>Unit</label><select id="vr_unit">${['meter','yard','kg','gram','piece','pair','dozen','hour','job'].map(u=>`<option ${d.unit===u?'selected':''}>${u}</option>`).join('')}</select></div><div class="field"><label>Rate ₹</label><input type="number" id="vr_rate" value="${d.rate||0}"></div></div><div class="field"><label>MOQ</label><input id="vr_moq" value="${escapeHTML(d.moq||'')}" placeholder="50 meter"></div>${type==='material'?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="vr_pref" '+(d.preferred?'checked':'')+'> Preferred vendor for this material</label>':''}<div class="field"><label>Notes</label><textarea id="vr_notes">${escapeHTML(d.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorRate()">Save Rate</button></div>`);}
-function saveVendorRate(){const st=window._vendorRateState,v=DB.vendors.find(x=>x.id===st.vendorId);const d=st.data;d.name=document.getElementById('vr_name').value.trim();d.quality=document.getElementById('vr_quality').value.trim();d.unit=document.getElementById('vr_unit').value;d.rate=Number(document.getElementById('vr_rate').value)||0;d.moq=document.getElementById('vr_moq').value.trim();d.notes=document.getElementById('vr_notes').value.trim();d.preferred=document.getElementById('vr_pref')?.checked||false;if(!d.name){alert('Name daaliye');return;}const arr=st.type==='service'?(v.services||[]):(v.materials||[]);if(st.index===null)arr.push(d);else arr[st.index]=d;const data={...v,materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(st.type==='service')data.services=arr;else data.materials=arr;db.collection('vendors').doc(v.id).set(data,{merge:true}).then(()=>{closeModal();render();}).catch(e=>alert('Rate save fail: '+e.message));}
-function deleteVendorRate(vendorId,type,index){if(!confirm('Ye rate delete kar doon?'))return;const v=DB.vendors.find(x=>x.id===vendorId);const arr=(type==='service'?(v.services||[]):(v.materials||[])).slice();arr.splice(index,1);const data=type==='service'?{services:arr,updatedAt:Date.now()}:{materials:arr,updatedAt:Date.now()};db.collection('vendors').doc(vendorId).set(data,{merge:true}).catch(e=>alert('Delete fail: '+e.message));}
+function saveVendorRate(){const st=window._vendorRateState,v=DB.vendors.find(x=>x.id===st.vendorId);const d=st.data;d.name=document.getElementById('vr_name').value.trim();d.quality=document.getElementById('vr_quality').value.trim();d.unit=document.getElementById('vr_unit').value;d.rate=Number(document.getElementById('vr_rate').value)||0;d.moq=document.getElementById('vr_moq').value.trim();d.notes=document.getElementById('vr_notes').value.trim();d.preferred=document.getElementById('vr_pref')?.checked||false;if(!d.name){alert('Enter a name.');return;}const arr=st.type==='service'?(v.services||[]):(v.materials||[]);if(st.index===null)arr.push(d);else arr[st.index]=d;const data={...v,materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(st.type==='service')data.services=arr;else data.materials=arr;db.collection('vendors').doc(v.id).set(data,{merge:true}).then(()=>{closeModal();render();}).catch(e=>alert('Rate save failed: '+e.message));}
+function deleteVendorRate(vendorId,type,index){if(!confirm('Delete this rate?'))return;const v=DB.vendors.find(x=>x.id===vendorId);const arr=(type==='service'?(v.services||[]):(v.materials||[])).slice();arr.splice(index,1);const data=type==='service'?{services:arr,updatedAt:Date.now()}:{materials:arr,updatedAt:Date.now()};db.collection('vendors').doc(vendorId).set(data,{merge:true}).catch(e=>alert('Delete failed: '+e.message));}
 
 function renderSettings(){
   const s = DB.settings;
@@ -3661,7 +3775,7 @@ function renderSettings(){
     <div class="panel" style="max-width:600px; margin-bottom:20px;">
       <h3>Staff Access</h3>
       <p style="font-size:13px; color:var(--slate); margin-top:-8px;">
-        Naya staff member add karna ho ya kisi ka access hatana ho, ye Firebase Console se hota hai (security ke liye app ke andar se nahi):<br>
+        Staff account creation and access changes are handled in Firebase Console for security:<br>
         <b>Firebase Console → Authentication → Users → Add user / Delete</b>
       </p>
       <p style="font-size:13px;">Currently signed in as: <b>${currentUser? escapeHTML(currentUser.email) : ''}</b></p>
@@ -3695,7 +3809,7 @@ function renderSettings(){
     </div>
     <div class="panel" style="max-width:600px; margin-bottom:20px;">
       <h3>Tailor Management</h3>
-      <p style="font-size:13px; color:var(--slate); margin-top:-8px;">Apne tailors ko add karein taa ki unhe orders assign kar sako.</p>
+      <p style="font-size:13px; color:var(--slate); margin-top:-8px;">Add tailors so they can be assigned to orders.</p>
       <div style="margin-bottom:16px;">
         ${DB.tailors.map(t=>`
           <div style="padding:12px; background:var(--ivory); border-radius:6px; margin-bottom:10px;">
@@ -3728,7 +3842,7 @@ function renderSettings(){
     </div>
     <div class="panel" style="max-width:600px; margin-bottom:20px;">
       <h3>Vendor Management</h3>
-      <p style="font-size:13px; color:var(--slate); margin-top:-8px;">Dyers, printers, embroiderers - apne vendors ko add karein.</p>
+      <p style="font-size:13px; color:var(--slate); margin-top:-8px;">Add your dyers, printers, embroiderers and other service providers.</p>
       <div style="margin-bottom:16px;">
         ${DB.vendors.map(v=>`
           <div style="padding:12px; background:var(--ivory); border-radius:6px; margin-bottom:8px;">
@@ -3757,7 +3871,7 @@ function renderSettings(){
     </div>
     <div class="panel" style="max-width:600px;">
       <h3>Backup</h3>
-      <p style="font-size:13px; color:var(--slate);">Data ab cloud (Firestore) mein save hota hai aur sab staff logins ke beech automatically sync hota hai. Phir bhi, extra safety ke liye JSON backup nikaal sakte hain.</p>
+      <p style="font-size:13px; color:var(--slate);">Data is saved in cloud Firestore and syncs automatically across staff logins. You can also export a JSON backup for extra safety.</p>
       <div style="display:flex; gap:10px;">
         <button class="btn btn-ghost" onclick="exportData()">Export Backup</button>
       </div>
@@ -3784,7 +3898,7 @@ function saveSettings(){
   };
   db.collection('meta').doc('settings').set(data, {merge:true})
     .then(()=>alert('Settings saved!'))
-    .catch(err=>alert('Save fail: '+err.message));
+    .catch(err=>alert('Save failed: '+err.message));
 }
 function showAddTailorForm(){
   document.getElementById('addTailorForm').style.display='block';
@@ -3794,13 +3908,13 @@ function saveTailor(){
   const name = document.getElementById('t_name').value.trim();
   const phone = document.getElementById('t_phone').value.trim().replace(/\D/g,'');
   const pass = document.getElementById('t_pass').value.trim();
-  if(!name || !phone || !pass){ alert('Sab field fill karein'); return; }
-  if(phone.length < 10){ alert('Valid phone number daaliye'); return; }
+  if(!name || !phone || !pass){ alert('Please complete all required fields.'); return; }
+  if(phone.length < 10){ alert('Enter a valid phone number.'); return; }
   
   const tailorData = { name, phone, password: pass };
   db.collection('tailors').add(tailorData)
     .then(()=>{
-      alert('Tailor add ho gaya!');
+      alert('Tailor added successfully!');
       document.getElementById('addTailorForm').style.display='none';
       document.getElementById('t_name').value='';
       document.getElementById('t_phone').value='';
@@ -3810,13 +3924,13 @@ function saveTailor(){
     .catch(err=>alert('Error: '+err.message));
 }
 function deleteTailor(id){
-  if(!confirm('Ye tailor delete kar doon?')) return;
+  if(!confirm('Delete this tailor?')) return;
   db.collection('tailors').doc(id).delete()
     .then(()=>{
-      alert('Tailor delete ho gaya');
+      alert('Tailor deleted successfully.');
       render();
     })
-    .catch(err=>alert('Delete fail: '+err.message));
+    .catch(err=>alert('Delete failed: '+err.message));
 }
 function toggleTailorPassword(id, password){
   const el = document.querySelector('.password-field-'+id);
@@ -3832,7 +3946,7 @@ function toggleTailorPassword(id, password){
 function copyTailorPassword(password){
   navigator.clipboard.writeText(password).then(()=>{
     alert('Password copied! Tailor ko WhatsApp se bhej do.');
-  }).catch(err=>alert('Copy fail: '+err.message));
+  }).catch(err=>alert('Copy failed: '+err.message));
 }
 function showAddVendorForm(){
   document.getElementById('addVendorForm').style.display='block';
@@ -3843,12 +3957,12 @@ function saveVendor(){
   const address = document.getElementById('v_address').value.trim();
   const phone = document.getElementById('v_phone').value.trim();
   const gst = document.getElementById('v_gst').value.trim();
-  if(!name){ alert('Vendor name daaliye'); return; }
+  if(!name){ alert('Enter the vendor name.'); return; }
   
   const vendorData = { name, address, phone, gst };
   db.collection('vendors').add(vendorData)
     .then(()=>{
-      alert('Vendor add ho gaya!');
+      alert('Vendor added successfully!');
       document.getElementById('addVendorForm').style.display='none';
       document.getElementById('v_name').value='';
       document.getElementById('v_address').value='';
@@ -3859,13 +3973,13 @@ function saveVendor(){
     .catch(err=>alert('Error: '+err.message));
 }
 function deleteVendor(id){
-  if(!confirm('Ye vendor delete kar doon?')) return;
+  if(!confirm('Delete this vendor?')) return;
   db.collection('vendors').doc(id).delete()
     .then(()=>{
-      alert('Vendor delete ho gaya');
+      alert('Vendor deleted successfully.');
       render();
     })
-    .catch(err=>alert('Delete fail: '+err.message));
+    .catch(err=>alert('Delete failed: '+err.message));
 }
 function exportData(){
   const blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'});
