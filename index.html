@@ -28,7 +28,7 @@ body{margin:0;}
 .app{
   font-family:'Inter',sans-serif;
   color:var(--charcoal);
-  background:var(--ivory);
+  background:#FFFFFF;
   min-height:100vh;
   display:flex;
 }
@@ -81,8 +81,8 @@ h1,h2,h3,.brand,.serif{font-family:'Fraunces',serif;}
   transition:background .15s, color .15s;
   border-left:3px solid transparent;
 }
-.nav-item:hover{background:rgba(255,255,255,0.06); color:#fff;}
-.nav-item.active{background:rgba(228,167,59,0.14); color:#fff; border-left:3px solid var(--gold);}
+.nav-item:hover{background:rgba(255,255,255,0.08); color:#fff;}
+.nav-item.active{background:var(--accent-gradient); color:#fff; border-left:3px solid #fff; box-shadow:0 3px 10px rgba(124,58,237,0.45);}
 .nav-icon{font-size:16px; width:18px; text-align:center;}
 .sidebar-footer{
   margin-top:auto;
@@ -159,7 +159,7 @@ h1,h2,h3,.brand,.serif{font-family:'Fraunces',serif;}
 .card-title{font-weight:600; font-size:14px; margin:0 0 3px 0;}
 .card-desc{font-size:12px; color:var(--slate); margin:0 0 6px 0; line-height:1.5; flex:1;}
 .card-cost{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--ink); font-size:12.5px; margin-bottom:6px;}
-.card-actions{display:flex; gap:6px;}
+.card-actions{display:flex; gap:6px; flex-wrap:wrap;}
 
 .empty-state{
   border:1.5px dashed var(--line);
@@ -399,10 +399,10 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
   --danger-bg:#FEE2E2;
 }
 
-/* Avatar circles (initials-based, Slack-style) */
+/* Avatar badges (initials-based) — rounded rectangle, not circular */
 .avatar{
   display:inline-flex; align-items:center; justify-content:center;
-  border-radius:50%; color:#fff; font-weight:700; flex-shrink:0;
+  border-radius:8px; color:#fff; font-weight:700; flex-shrink:0;
   font-family:'Inter',sans-serif; letter-spacing:0.2px;
   background-size:cover; background-position:center;
 }
@@ -418,7 +418,7 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
   width:26px; height:26px; border-radius:8px; font-size:13px;
   background:rgba(255,255,255,0.08); flex-shrink:0;
 }
-.nav-item.active .nav-icon-chip{background:var(--gold); color:#fff;}
+.nav-item.active .nav-icon-chip{background:rgba(255,255,255,0.25); color:#fff;}
 
 /* Status pill badges */
 .status-pill{
@@ -475,6 +475,7 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
     <div class="nav-item" data-page="invoices"><span class="nav-icon-chip">&#9636;</span> Invoices</div>
     <div class="nav-item" data-page="challans"><span class="nav-icon-chip">&#128666;</span> Challans</div>
     <div class="nav-item" data-page="newchallan"><span class="nav-icon-chip">&#9998;</span> New Challan</div>
+    <div class="nav-item" data-page="links"><span class="nav-icon-chip">&#128279;</span> Links</div>
     <div class="nav-item admin-only-nav" data-page="settings"><span class="nav-icon-chip">&#9881;</span> Settings</div>
     <div class="nav-item admin-only-nav" data-page="team"><span class="nav-icon-chip">&#128101;</span> Team</div>
     <div style="padding:12px; border-top:1px solid var(--line); margin-top:8px;">
@@ -668,14 +669,15 @@ let DB = {
   costings: [],
   listings: [],
   listingAccounts: [],
-  users: []
+  users: [],
+  links: []
 };
 let currentUser = null;
 let currentUserRole = 'admin'; // 'admin' or 'tailor' -- used by the separate tailor self-service portal, unrelated to staff roles below
 let currentTailorId = null;
 let listenersActive = false;
 let unsubscribers = [];
-let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false, users:false };
+let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false, users:false, links:false };
 
 /* ---- Staff access control (Admin / Staff roles) ---- */
 let appRole = null;         // 'admin' | 'staff' | null (not yet known)
@@ -683,7 +685,7 @@ let appRoleReady = false;   // becomes true once we've read the ID token claims
 const ADMIN_ONLY_PAGES = ['settings','team'];
 
 function allLoaded(){
-  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts && loadedFlags.users;
+  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts && loadedFlags.users && loadedFlags.links;
 }
 
 function attachListeners(){
@@ -763,6 +765,13 @@ function attachListeners(){
     afterSync();
     render();
   }, err=>{ console.error(err); loadedFlags.users = true; afterSync(); }));
+
+  unsubscribers.push(db.collection('links').onSnapshot(snap=>{
+    DB.links = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    loadedFlags.links = true;
+    afterSync();
+    if(currentPage==='links') render();
+  }, err=>{ console.error(err); loadedFlags.links = true; afterSync(); }));
 }
 function detachListeners(){
   unsubscribers.forEach(u=>{ try{ u(); }catch(e){} });
@@ -790,9 +799,9 @@ function showSetupScreen(){
       <p>Firebase configuration has not been added to this file yet. Follow these steps:</p>
       <div class="setup-steps">
         1. <b>console.firebase.google.com</b> to create a new project.<br>
-        2. Project ke andar <b>Build → Authentication → Get Started → Email/Password</b> enable karein.<br>
-        3. <b>Build → Firestore Database → Create database</b> (Production mode, region: asia-south1 ya nearest).<br>
-        4. Firestore &rarr; <b>Rules</b> tab mein ye paste karke Publish karein:
+        2. Inside the project, enable <b>Build → Authentication → Get Started → Email/Password</b>.<br>
+        3. <b>Build → Firestore Database → Create database</b> (Production mode, region: asia-south1 or nearest).<br>
+        4. Go to Firestore &rarr; the <b>Rules</b> tab, paste this, and click Publish:
         <pre>rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -803,8 +812,8 @@ service cloud.firestore {
 }</pre>
         5. Project Settings (gear icon) &rarr; scroll to <b>Your apps</b> &rarr; click Web icon (&lt;/&gt;) &rarr; register app &rarr; copy the <code>firebaseConfig</code> object.<br>
         6. Open this HTML file in a text editor and <code>firebaseConfig</code> section dhundhein, paste your values.<br>
-        7. <b>Authentication &rarr; Users &rarr; Add user</b> se add staff member email/password accounts — these will be used for login.<br>
-        8. File ko save karke apni hosting/domain pe upload kar dein.
+        7. Use <b>Authentication &rarr; Users &rarr; Add user</b> to add staff member email/password accounts — these will be used for login.<br>
+        8. Save the file and upload it to your hosting/domain.
       </div>
     </div>
   `;
@@ -826,7 +835,7 @@ function showLoginScreen(error){
       <div class="form-error" id="loginError">${error||''}</div>
       <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="attemptLogin()">Sign In</button>
       <p style="margin-top:14px; font-size:12.5px; text-align:center;">
-        <span style="cursor:pointer; text-decoration:underline; color:var(--gold-dark);" onclick="showForgotPasswordScreen()">Password bhool gaye?</span>
+        <span style="cursor:pointer; text-decoration:underline; color:var(--gold-dark);" onclick="showForgotPasswordScreen()">Forgot password?</span>
       </p>
       <p style="margin-top:10px; font-size:11.5px;">Need a new staff account? Ask the studio owner to add it from Firebase Console.</p>
     </div>
@@ -845,7 +854,7 @@ function showForgotPasswordScreen(message, isError){
       <div class="form-error" style="color:${isError?'var(--brick)':'var(--gold-dark)'};">${message||''}</div>
       <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="sendPasswordReset()">Send Reset Link</button>
       <p style="margin-top:14px; font-size:12.5px; text-align:center;">
-        <span style="cursor:pointer; text-decoration:underline;" onclick="showLoginScreen()">← Wapas Sign In pe jaayein</span>
+        <span style="cursor:pointer; text-decoration:underline;" onclick="showLoginScreen()">← Back to Sign In</span>
       </p>
     </div>
   `;
@@ -853,7 +862,7 @@ function showForgotPasswordScreen(message, isError){
 function sendPasswordReset(){
   const email = document.getElementById('resetEmail').value.trim();
   if(!email){ showForgotPasswordScreen('Enter your email.', true); return; }
-  showForgotPasswordScreen('Bhej rahe hain...', false);
+  showForgotPasswordScreen('Sending...', false);
   auth.sendPasswordResetEmail(email)
     .then(()=>showForgotPasswordScreen('Reset link sent. Check your email and spam folder.', false))
     .catch(err=>showForgotPasswordScreen('Error: '+(err.message||'Kuch galat hua.'), true));
@@ -861,7 +870,7 @@ function sendPasswordReset(){
 function attemptLogin(){
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
-  if(!email || !pass){ document.getElementById('loginError').textContent='Email aur password dono daalein.'; return; }
+  if(!email || !pass){ document.getElementById('loginError').textContent='Enter both email and password.'; return; }
   document.getElementById('loginError').textContent='Signing in...';
   auth.signInWithEmailAndPassword(email, pass).catch(err=>{
     document.getElementById('loginError').textContent = 'Login failed: ' + (err.message||'Galat email/password.');
@@ -935,7 +944,7 @@ function bootstrapAsAdmin(){
   if(msgEl) msgEl.textContent = 'Setting up...';
   functionsApi.httpsCallable('bootstrapFirstAdmin')({})
     .then(()=> refreshAppRole(true))
-    .catch(err=>{ if(msgEl) msgEl.textContent = 'Error: ' + (err.message || 'Pehle se hi ek Admin maujood hai. Existing Admin se apna role set karwaayein.'); });
+    .catch(err=>{ if(msgEl) msgEl.textContent = 'Error: ' + (err.message || 'An Admin already exists. Ask the existing Admin to set your role.'); });
 }
 
 /* ============================= ROUTER ============================= */
@@ -944,7 +953,7 @@ let newInvoiceState = null;
 
 function navigate(page){
   if(ADMIN_ONLY_PAGES.includes(page) && appRoleReady && !isAdmin()){
-    alert('Sirf Admin ke paas is section ka access hai.');
+    alert('Only Admins have access to this section.');
     return;
   }
   currentPage = page;
@@ -999,9 +1008,9 @@ function render(){
   const main = document.getElementById('main');
   const bootstrapBanner = (appRoleReady && !appRole) ? `
     <div class="panel" style="background:#FFF7E0; border:1px solid #E4A73B; margin-bottom:20px;">
-      <b>Setup pending:</b> Aapke account mein abhi koi role (Admin/Staff) set nahi hai.
-      Agar aap is studio ke pehle/owner account hain, to neeche click karke khud ko Admin banaayein.
-      <div style="margin-top:10px;"><button class="btn btn-primary" onclick="bootstrapAsAdmin()">Mujhe Admin banaayein</button></div>
+      <b>Setup pending:</b> Your account doesn't have a role (Admin/Staff) set yet.
+      If you're the first/owner account for this studio, click below to make yourself Admin.
+      <div style="margin-top:10px;"><button class="btn btn-primary" onclick="bootstrapAsAdmin()">Make me Admin</button></div>
       <div id="bootstrapMsg" style="margin-top:8px; font-size:12.5px;"></div>
     </div>` : '';
   if(currentPage==='dashboard') main.innerHTML = bootstrapBanner + renderDashboard();
@@ -1026,6 +1035,7 @@ function render(){
   else if(currentPage==='viewchallan') main.innerHTML = renderChallanView(window._viewingChallanId);
   else if(currentPage==='settings') main.innerHTML = renderSettings();
   else if(currentPage==='team') main.innerHTML = renderTeam();
+  else if(currentPage==='links') main.innerHTML = renderLinks();
   else if(currentPage==='search') main.innerHTML = renderSearchResults(window._searchResults||[]);
 }
 
@@ -1129,8 +1139,8 @@ function renderDashboard(){
   return `
     <div class="page-header">
       <div>
-        <h1 class="page-title">Namaste ✦</h1>
-        <p class="page-sub">${escapeHTML(DB.settings.bizName)} ka overview</p>
+        <h1 class="page-title">Welcome ✦</h1>
+        <p class="page-sub">${escapeHTML(DB.settings.bizName)} overview</p>
       </div>
     </div>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); margin-bottom:30px;">
@@ -1727,7 +1737,7 @@ function shareOnWhatsApp(invId){
   const showINR = (inv.currencyMode||'INR')!=='USD';
   const showUSD = (inv.currencyMode||'INR')!=='INR';
   const totalStr = (showINR?fmtINR(inv.total):'') + (showINR&&showUSD?' / ':'') + (showUSD?fmtUSD(inv.totalUSD!==undefined?inv.totalUSD:inv.total/(inv.usdRate||83)):'');
-  let msg = `Namaste ${client.name},\n\n${inv.bizSnapshot.bizName} se Invoice ${inv.number} (${inv.date}):\n\n`;
+  let msg = `Hello ${client.name},\n\nInvoice ${inv.number} from ${inv.bizSnapshot.bizName} (${inv.date}):\n\n`;
   inv.items.forEach(it=>{
     msg += `• ${it.name} x${it.qty} = ${fmtINR(it.qty*it.rate)}\n`;
   });
@@ -1917,7 +1927,7 @@ function renderInvoiceList(){
     <div class="page-header">
       <div>
         <h1 class="page-title">Invoices</h1>
-        <p class="page-sub">Sab GST invoices ek jagah</p>
+        <p class="page-sub">All your GST invoices in one place</p>
       </div>
       <div style="display:flex; gap:10px;">
         ${allSorted.length? `<button class="btn btn-ghost" onclick="exportInvoicesExcel()">⬇ Export to Excel</button>`:''}
@@ -1941,9 +1951,9 @@ function renderInvoiceList(){
         </select>
       </div>
       ${invoiceListFilters.month? `
-      <button class="btn btn-primary btn-sm" onclick="mergeMonthInvoices()">📅 Is Month Ka Ek Invoice Banao (${items.length})</button>
+      <button class="btn btn-primary btn-sm" onclick="mergeMonthInvoices()">📅 Create One Invoice for This Month (${items.length})</button>
       ` : ''}
-      ${(invoiceListFilters.month || invoiceListFilters.clientId)? `<button class="btn btn-ghost btn-sm" onclick="invoiceListFilters={month:'',clientId:''}; render();">Filter Clear Karein</button>` : ''}
+      ${(invoiceListFilters.month || invoiceListFilters.clientId)? `<button class="btn btn-ghost btn-sm" onclick="invoiceListFilters={month:'',clientId:''}; render();">Clear Filter</button>` : ''}
     </div>` : ''}
     ${items.length? renderInvoiceTable(items,false) : `<div class="empty-state"><div class="big">▤</div>${allSorted.length? 'No invoices found for this filter.' : 'No invoices created. Start with "New Invoice".'}</div>`}
   `;
@@ -2011,7 +2021,7 @@ function mergeSelectedInvoices(){
   if(invs.length<2){ alert('Selected invoices were not found.'); return; }
   const clientIds = new Set(invs.map(i=>i.clientId));
   if(clientIds.size>1){
-    alert('Sirf ek hi client ke invoices ko ek saath merge kar sakte hain. Please select invoices for the same client only.');
+    alert('You can only merge invoices for the same client. Please select invoices for the same client only.');
     return;
   }
   const first = invs[0];
@@ -2100,7 +2110,7 @@ function exportInvoicesExcel(){
   XLSX.writeFile(wb, `invoices-export-${todayStr()}.xlsx`);
 }
 function deleteInvoice(id){
-  if(!confirm('Ye invoice delete karein?')) return;
+  if(!confirm('Delete this invoice?')) return;
   db.collection('invoices').doc(id).delete().catch(err=>alert('Delete failed: '+err.message));
 }
 function viewInvoice(id){
@@ -2241,7 +2251,7 @@ function renderInvoiceBuilder(){
         </div>
         <div style="font-size:12.5px; color:var(--slate); margin-bottom:16px;">
           <span class="badge ${sameState?'badge-gold':'badge-slate'}">${isExport? '🌍 Export Invoice (Outside India) → IGST' : (sameState? 'Same State → CGST + SGST' : 'Different State → IGST')}</span>
-          ${isExport? `<div style="margin-top:6px; font-size:11.5px;">Export ke liye GST treatment (0%/LUT/with tax) apne CA se confirm kar lein.</div>`:''}
+          ${isExport? `<div style="margin-top:6px; font-size:11.5px;">For exports, confirm the GST treatment (0%/LUT/with tax) with your CA.</div>`:''}
         </div>
 
         <h3>Transport Details (optional)</h3>
@@ -2284,7 +2294,7 @@ function renderInvoiceBuilder(){
           const totalQty = quickSizes.reduce((sum,sz)=> sum + (Number(panel.qtys[sz])||0), 0) + (Number(panel.qtys['__custom'])||0);
           return `
           <div style="border:1px solid var(--line); background:var(--accent-light); border-radius:10px; padding:14px; margin-bottom:14px;">
-            <div style="font-weight:700; margin-bottom:8px;">📐 ${escapeHTML(style? style.name:'')} — Har size ke saamne qty daalein</div>
+            <div style="font-weight:700; margin-bottom:8px;">📐 ${escapeHTML(style? style.name:'')} — Enter qty for each size</div>
             <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(80px,1fr)); gap:8px; margin-bottom:10px;">
               ${quickSizes.map(sz=>`
                 <div>
@@ -2517,7 +2527,7 @@ function finalizeInvoice(){
   const balanceDueUSD = totalUSD - advanceReceivedUSD;
   const isEdit = !!st.editId;
   const number = (st.number && st.number.trim()) ? st.number.trim() : `${DB.settings.invoicePrefix}-${String(DB.settings.nextInvoiceNo).padStart(4,'0')}`;
-  if(!number){ alert('Invoice number dalna zaroori hai'); return; }
+  if(!number){ alert('Invoice number is required'); return; }
   const invoiceData = {
     number,
     date: st.date,
@@ -2558,7 +2568,7 @@ function finalizeInvoice(){
   };
 
   if(isEdit){
-    // Edit mode: sirf isi invoice ka data update hota hai (merge:true), baaki purana data (dusre invoices, clients, styles) bilkul touch nahi hota.
+    // Edit mode: only this invoice's data gets updated (merge:true); other data (other invoices, clients, styles) is untouched.
     db.collection('invoices').doc(st.editId).set(invoiceData, {merge:true})
       .then(()=>{
         newInvoiceState = null;
@@ -2571,7 +2581,7 @@ function finalizeInvoice(){
     ref.set(invoiceData)
       .then(()=>db.collection('meta').doc('settings').set({nextInvoiceNo: DB.settings.nextInvoiceNo+1}, {merge:true}))
       .then(()=>{
-        // Agar ye invoice orders se bana hai, toh un orders ko "invoiced" mark kar dein (delete nahi karte, sirf status + invoiceId update).
+        // If this invoice was created from orders, mark those orders as "invoiced" (don't delete them, just update status + invoiceId).
         if(st.sourceOrderIds && st.sourceOrderIds.length){
           const batch = db.batch();
           st.sourceOrderIds.forEach(oid=>{
@@ -2880,7 +2890,7 @@ function renderOrdersList(){
       <div class="field" style="margin:0;">
         <label>Status</label>
         <select onchange="setOrderListFilter('status', this.value)">
-          <option value="pending" ${orderListFilters.status==='pending'?'selected':''}>Pending (Invoice Nahi Bana)</option>
+          <option value="pending" ${orderListFilters.status==='pending'?'selected':''}>Pending (No Invoice Yet)</option>
           <option value="invoiced" ${orderListFilters.status==='invoiced'?'selected':''}>Invoiced</option>
           <option value="" ${orderListFilters.status===''?'selected':''}>Sab</option>
         </select>
@@ -2899,12 +2909,12 @@ function renderOrdersList(){
           ${DB.clients.map(c=>`<option value="${c.id}" ${orderListFilters.clientId===c.id?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}
         </select>
       </div>
-      ${(orderListFilters.month || orderListFilters.clientId)? `<button class="btn btn-ghost btn-sm" onclick="orderListFilters.month=''; orderListFilters.clientId=''; render();">Filter Clear Karein</button>` : ''}
+      ${(orderListFilters.month || orderListFilters.clientId)? `<button class="btn btn-ghost btn-sm" onclick="orderListFilters.month=''; orderListFilters.clientId=''; render();">Clear Filter</button>` : ''}
     </div>
     ${orderSelection.size>0? `
     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
       <span style="font-size:12.5px; color:var(--slate);"><b>${orderSelection.size}</b> order(s) selected</span>
-      <button class="btn btn-primary btn-sm" onclick="generateInvoiceFromOrders()">🧾 Selected Orders Ka Invoice Banao</button>
+      <button class="btn btn-primary btn-sm" onclick="generateInvoiceFromOrders()">🧾 Create Invoice from Selected Orders</button>
       <button class="btn btn-ghost btn-sm" onclick="clearOrderSelection()">Clear Selection</button>
     </div>` : ''}
     ${items.length? `
@@ -3040,7 +3050,7 @@ function renderInvoiceView(id){
     </div>
     ${inv.mergedFrom && inv.mergedFrom.length? `
     <div class="no-print" style="font-size:12.5px; color:var(--slate); margin-bottom:16px; padding:10px 14px; background:var(--ivory); border:1px solid var(--line); border-radius:8px;">
-      🔗 Ye combined invoice hai, inse merge karke bana hai: ${inv.mergedFrom.map(m=>`<a href="javascript:void(0)" onclick="viewInvoice('${m.id}')" style="color:var(--gold); text-decoration:underline;">${escapeHTML(m.number)}</a>`).join(', ')}
+      🔗 This is a combined invoice, merged from: ${inv.mergedFrom.map(m=>`<a href="javascript:void(0)" onclick="viewInvoice('${m.id}')" style="color:var(--gold); text-decoration:underline;">${escapeHTML(m.number)}</a>`).join(', ')}
     </div>` : ''}
     <div class="bill">
       <div class="bill-torn"></div>
@@ -3289,7 +3299,7 @@ function addChallanMaterial(){
 function saveChallan(){
   const st = window._newChallanState;
   if(!st.vendorId){ alert('Vendor select kariye'); return; }
-  if(!st.materials.length){ alert('Kam se kam ek material add kariye'); return; }
+  if(!st.materials.length){ alert('Please add at least one material'); return; }
   
   st.notes = document.getElementById('c_notes').value.trim();
   st.number = 'CHL-' + String(DB.challans.length + 1).padStart(4,'0');
@@ -3657,7 +3667,7 @@ function copyMessageAndShare(){
   navigator.clipboard.writeText(msg)
     .then(()=>{
       closeModal();
-      alert('✓ Message copied! Now paste it in WhatsApp.\n\nPaste karne ke liye Ctrl+V (Windows) ya Cmd+V (Mac) use karo.');
+      alert('✓ Message copied! Now paste it in WhatsApp.\n\nUse Ctrl+V (Windows) or Cmd+V (Mac) to paste.');
       
       // Try to open WhatsApp
       try {
@@ -3669,7 +3679,7 @@ function copyMessageAndShare(){
       }
     })
     .catch(err=>{
-      alert('❌ Copy failed!\n\n' + err.message + '\n\nManually select the message above aur Ctrl+C karo.');
+      alert('❌ Copy failed!\n\n' + err.message + '\n\nManually select the message above and press Ctrl+C.');
     });
 }
 
@@ -3961,18 +3971,19 @@ function printCosting(id){const c=DB.costings.find(x=>x.id===id);if(!c)return;co
 function renderVendors(){return `<div class="page-header"><div><h1 class="page-title">Vendors & Suppliers</h1><p class="page-sub">Material suppliers, dyers, printers and service providers with their rates</p></div><button class="btn btn-primary" onclick="openVendorModal()">+ Add Vendor</button></div><div class="grid">${DB.vendors.map(v=>`<div class="card"><div class="card-body"><div class="tag-row"><span class="tag">${escapeHTML(v.type||'Material Supplier')}</span></div><h3 class="card-title">${escapeHTML(v.name)}</h3><div style="font-size:12px;color:var(--slate);margin-bottom:8px">${escapeHTML(v.contactPerson||'')}${v.phone?' · '+escapeHTML(v.phone):''}</div><div style="font-size:12px;margin-bottom:10px"><b>${(v.materials||[]).length}</b> materials · <b>${(v.services||[]).length}</b> services</div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="viewVendor('${v.id}')">View Rates</button><button class="btn btn-ghost btn-sm" onclick="openVendorModal('${v.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteVendor('${v.id}')">Delete</button></div></div></div>`).join('')}</div>${!DB.vendors.length?'<div class="empty-state"><div class="big">◉</div>No vendors yet. Add fabric, trim and processing suppliers.</div>':''}`;}
 function openVendorModal(id){const v=id?DB.vendors.find(x=>x.id===id):{id:null,name:'',type:'Material Supplier',contactPerson:'',phone:'',email:'',address:'',gst:'',paymentTerms:'',leadTime:'',notes:'',materials:[],services:[]};window._vendorEdit=JSON.parse(JSON.stringify(v));renderVendorModal();}
 function renderVendorModal(){const v=window._vendorEdit;showModal(`<h2>${v.id?'Edit':'Add'} Vendor</h2><div class="field-row"><div class="field"><label>Vendor Name</label><input id="vm_name" value="${escapeHTML(v.name)}"></div><div class="field"><label>Type</label><select id="vm_type"><option ${v.type==='Material Supplier'?'selected':''}>Material Supplier</option><option ${v.type==='Service Provider'?'selected':''}>Service Provider</option><option ${v.type==='Both'?'selected':''}>Both</option></select></div></div><div class="field-row"><div class="field"><label>Contact Person</label><input id="vm_contact" value="${escapeHTML(v.contactPerson||'')}"></div><div class="field"><label>Phone / WhatsApp</label><input id="vm_phone" value="${escapeHTML(v.phone||'')}"></div></div><div class="field-row"><div class="field"><label>Email</label><input id="vm_email" value="${escapeHTML(v.email||'')}"></div><div class="field"><label>GST</label><input id="vm_gst" value="${escapeHTML(v.gst||'')}"></div></div><div class="field"><label>Address</label><textarea id="vm_address">${escapeHTML(v.address||'')}</textarea></div><div class="field-row"><div class="field"><label>Payment Terms</label><input id="vm_payment" value="${escapeHTML(v.paymentTerms||'')}" placeholder="Advance / 30 days"></div><div class="field"><label>Lead Time</label><input id="vm_lead" value="${escapeHTML(v.leadTime||'')}" placeholder="3-5 days"></div></div><div class="field"><label>Notes</label><textarea id="vm_notes">${escapeHTML(v.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorModal()">Save Vendor</button></div>`);}
-function saveVendorModal(){const v=window._vendorEdit;const data={...v,name:document.getElementById('vm_name').value.trim(),type:document.getElementById('vm_type').value,contactPerson:document.getElementById('vm_contact').value.trim(),phone:document.getElementById('vm_phone').value.trim(),email:document.getElementById('vm_email').value.trim(),gst:document.getElementById('vm_gst').value.trim(),address:document.getElementById('vm_address').value.trim(),paymentTerms:document.getElementById('vm_payment').value.trim(),leadTime:document.getElementById('vm_lead').value.trim(),notes:document.getElementById('vm_notes').value.trim(),materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(!data.name){alert('Enter the vendor name.');return;}const ref=v.id?db.collection('vendors').doc(v.id):db.collection('vendors').doc();if(!v.id)data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{closeModal();render();}).catch(e=>alert('Vendor save failed: '+e.message));}
+function saveVendorModal(){const v=window._vendorEdit;const isNew=!v.id;const data={...v,name:document.getElementById('vm_name').value.trim(),type:document.getElementById('vm_type').value,contactPerson:document.getElementById('vm_contact').value.trim(),phone:document.getElementById('vm_phone').value.trim(),email:document.getElementById('vm_email').value.trim(),gst:document.getElementById('vm_gst').value.trim(),address:document.getElementById('vm_address').value.trim(),paymentTerms:document.getElementById('vm_payment').value.trim(),leadTime:document.getElementById('vm_lead').value.trim(),notes:document.getElementById('vm_notes').value.trim(),materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(!data.name){alert('Enter the vendor name.');return;}const ref=v.id?db.collection('vendors').doc(v.id):db.collection('vendors').doc();if(!v.id)data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{closeModal(); if(isNew){ viewVendor(ref.id); } else { render(); } }).catch(e=>alert('Vendor save failed: '+e.message));}
 function viewVendor(id){window._viewingVendorId=id;navigate('vendordetail');}
-function renderVendorDetail(id){const v=DB.vendors.find(x=>x.id===id);if(!v)return '<div class="empty-state">Vendor not found</div>';return `<div class="page-header"><div><button class="btn btn-ghost btn-sm" onclick="navigate('vendors')">← Vendors</button><h1 class="page-title" style="margin-top:10px">${escapeHTML(v.name)}</h1><p class="page-sub">${escapeHTML(v.type||'')}</p></div><button class="btn btn-primary" onclick="openVendorRateModal('${v.id}')">+ Add Material / Service Rate</button></div><div class="field-row"><div class="panel" style="padding:16px"><h3>Vendor Details</h3><p>${escapeHTML(v.contactPerson||'')}</p><p>${escapeHTML(v.phone||'')}</p><p>${escapeHTML(v.email||'')}</p><p>${escapeHTML(v.address||'')}</p><p>Payment: ${escapeHTML(v.paymentTerms||'-')} · Lead: ${escapeHTML(v.leadTime||'-')}</p></div><div class="panel" style="padding:16px"><h3>Notes</h3><p>${escapeHTML(v.notes||'-')}</p></div></div><div class="panel" style="padding:16px;margin-top:18px;overflow:auto"><h3>Material Rates</h3>${(v.materials||[]).length?`<table><thead><tr><th>Material</th><th>Quality / Spec</th><th>Unit</th><th>Rate ₹</th><th>MOQ</th><th>Preferred</th><th></th></tr></thead><tbody>${v.materials.map((m,i)=>`<tr><td><b>${escapeHTML(m.name)}</b></td><td>${escapeHTML(m.quality||'')}</td><td>${escapeHTML(m.unit||'')}</td><td>₹${money(m.rate)}</td><td>${escapeHTML(m.moq||'-')}</td><td>${m.preferred?'⭐':''}</td><td><button class="btn btn-ghost btn-sm" onclick="openVendorRateModal('${v.id}','material',${i})">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteVendorRate('${v.id}','material',${i})">Delete</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state" style="padding:25px">No material rates added.</div>'}</div><div class="panel" style="padding:16px;margin-top:18px;overflow:auto"><h3>Service Rates</h3>${(v.services||[]).length?`<table><thead><tr><th>Service</th><th>Material / Spec</th><th>Unit</th><th>Rate ₹</th><th>MOQ</th><th></th></tr></thead><tbody>${v.services.map((m,i)=>`<tr><td><b>${escapeHTML(m.name)}</b></td><td>${escapeHTML(m.quality||'')}</td><td>${escapeHTML(m.unit||'')}</td><td>₹${money(m.rate)}</td><td>${escapeHTML(m.moq||'-')}</td><td><button class="btn btn-ghost btn-sm" onclick="openVendorRateModal('${v.id}','service',${i})">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteVendorRate('${v.id}','service',${i})">Delete</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state" style="padding:25px">No service rates added.</div>'}</div>`;}
-function openVendorRateModal(vendorId,type='material',index=null){const v=DB.vendors.find(x=>x.id===vendorId);const arr=type==='service'?(v.services||[]):(v.materials||[]);const r=index!==null?arr[index]:{name:'',quality:'',unit:'meter',rate:0,moq:'',preferred:false,notes:''};window._vendorRateState={vendorId,type,index,data:JSON.parse(JSON.stringify(r))};const d=window._vendorRateState.data;showModal(`<h2>${index!==null?'Edit':'Add'} ${type==='service'?'Service':'Material'} Rate</h2><div class="field"><label>${type==='service'?'Service Name':'Material Name'}</label><input id="vr_name" value="${escapeHTML(d.name||'')}" placeholder="${type==='service'?'Fabric Printing / Dyeing':'Black Satin'}"></div><div class="field"><label>Quality / Specification</label><input id="vr_quality" value="${escapeHTML(d.quality||'')}" placeholder="120 GSM / Digital Print"></div><div class="field-row"><div class="field"><label>Unit</label><select id="vr_unit">${['meter','yard','kg','gram','piece','pair','dozen','hour','job'].map(u=>`<option ${d.unit===u?'selected':''}>${u}</option>`).join('')}</select></div><div class="field"><label>Rate ₹</label><input type="number" id="vr_rate" value="${d.rate||0}"></div></div><div class="field"><label>MOQ</label><input id="vr_moq" value="${escapeHTML(d.moq||'')}" placeholder="50 meter"></div>${type==='material'?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="vr_pref" '+(d.preferred?'checked':'')+'> Preferred vendor for this material</label>':''}<div class="field"><label>Notes</label><textarea id="vr_notes">${escapeHTML(d.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorRate()">Save Rate</button></div>`);}
-function saveVendorRate(){const st=window._vendorRateState,v=DB.vendors.find(x=>x.id===st.vendorId);const d=st.data;d.name=document.getElementById('vr_name').value.trim();d.quality=document.getElementById('vr_quality').value.trim();d.unit=document.getElementById('vr_unit').value;d.rate=Number(document.getElementById('vr_rate').value)||0;d.moq=document.getElementById('vr_moq').value.trim();d.notes=document.getElementById('vr_notes').value.trim();d.preferred=document.getElementById('vr_pref')?.checked||false;if(!d.name){alert('Enter a name.');return;}const arr=st.type==='service'?(v.services||[]):(v.materials||[]);if(st.index===null)arr.push(d);else arr[st.index]=d;const data={...v,materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(st.type==='service')data.services=arr;else data.materials=arr;db.collection('vendors').doc(v.id).set(data,{merge:true}).then(()=>{closeModal();render();}).catch(e=>alert('Rate save failed: '+e.message));}
+function renderVendorDetail(id){const v=DB.vendors.find(x=>x.id===id);if(!v)return '<div class="empty-state">Vendor not found</div>';return `<div class="page-header"><div><button class="btn btn-ghost btn-sm" onclick="navigate('vendors')">← Vendors</button><h1 class="page-title" style="margin-top:10px">${escapeHTML(v.name)}</h1><p class="page-sub">${escapeHTML(v.type||'')}</p></div><button class="btn btn-primary" onclick="openVendorRateModal('${v.id}')">+ Add Material / Service Rate</button></div><div class="field-row"><div class="panel" style="padding:16px"><h3>Vendor Details</h3><p>${escapeHTML(v.contactPerson||'')}</p><p>${escapeHTML(v.phone||'')}</p><p>${escapeHTML(v.email||'')}</p><p>${escapeHTML(v.address||'')}</p><p>Payment: ${escapeHTML(v.paymentTerms||'-')} · Lead: ${escapeHTML(v.leadTime||'-')}</p></div><div class="panel" style="padding:16px"><h3>Notes</h3><p>${escapeHTML(v.notes||'-')}</p></div></div><div class="panel" style="padding:16px;margin-top:18px;overflow:auto"><h3>Material Rates</h3>${(v.materials||[]).length?`<table><thead><tr><th>Material</th><th>Quality / Spec</th><th>Unit</th><th>Rate ₹</th><th>MOQ</th><th>Preferred</th><th></th></tr></thead><tbody>${v.materials.map((m,i)=>`<tr><td><b>${escapeHTML(m.name)}</b></td><td>${escapeHTML(m.quality||'')}</td><td>${escapeHTML(m.unit||'')}</td><td>₹${money(m.rate)}</td><td>${escapeHTML(m.moq||'-')}</td><td>${m.preferred?'⭐':''}</td><td><button class="btn btn-ghost btn-sm" onclick="openVendorRateModal('${v.id}','material',${i})">Edit</button><button class="btn btn-ghost btn-sm" onclick="viewVendorRateHistory('${v.id}','material',${i})">History${m.priceHistory&&m.priceHistory.length?' ('+m.priceHistory.length+')':''}</button><button class="btn btn-danger btn-sm" onclick="deleteVendorRate('${v.id}','material',${i})">Delete</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state" style="padding:25px">No material rates added.</div>'}</div><div class="panel" style="padding:16px;margin-top:18px;overflow:auto"><h3>Service Rates</h3>${(v.services||[]).length?`<table><thead><tr><th>Service</th><th>Material / Spec</th><th>Unit</th><th>Rate ₹</th><th>MOQ</th><th></th></tr></thead><tbody>${v.services.map((m,i)=>`<tr><td><b>${escapeHTML(m.name)}</b></td><td>${escapeHTML(m.quality||'')}</td><td>${escapeHTML(m.unit||'')}</td><td>₹${money(m.rate)}</td><td>${escapeHTML(m.moq||'-')}</td><td><button class="btn btn-ghost btn-sm" onclick="openVendorRateModal('${v.id}','service',${i})">Edit</button><button class="btn btn-ghost btn-sm" onclick="viewVendorRateHistory('${v.id}','service',${i})">History${m.priceHistory&&m.priceHistory.length?' ('+m.priceHistory.length+')':''}</button><button class="btn btn-danger btn-sm" onclick="deleteVendorRate('${v.id}','service',${i})">Delete</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty-state" style="padding:25px">No service rates added.</div>'}</div>`;}
+function openVendorRateModal(vendorId,type='material',index=null){const v=DB.vendors.find(x=>x.id===vendorId);const arr=type==='service'?(v.services||[]):(v.materials||[]);const r=index!==null?arr[index]:{name:'',quality:'',unit:'meter',rate:0,moq:'',preferred:false,notes:'',priceHistory:[]};window._vendorRateState={vendorId,type,index,data:JSON.parse(JSON.stringify(r))};const d=window._vendorRateState.data;const historyHTML=(d.priceHistory&&d.priceHistory.length)?`<div class="field"><label>Price History</label><div style="font-size:12px; color:var(--slate); border:1px solid var(--line); border-radius:8px; padding:8px 10px; max-height:120px; overflow:auto;">${d.priceHistory.slice().reverse().map(h=>`<div style="padding:3px 0; border-bottom:1px solid var(--line);">₹${h.rate} <span style="opacity:0.7;">— effective until ${new Date(h.date).toLocaleDateString('en-IN')}</span></div>`).join('')}</div></div>`:'';showModal(`<h2>${index!==null?'Edit':'Add'} ${type==='service'?'Service':'Material'} Rate</h2><div class="field"><label>${type==='service'?'Service Name':'Material Name'}</label><input id="vr_name" value="${escapeHTML(d.name||'')}" placeholder="${type==='service'?'Fabric Printing / Dyeing':'Black Satin'}"></div><div class="field"><label>Quality / Specification</label><input id="vr_quality" value="${escapeHTML(d.quality||'')}" placeholder="120 GSM / Digital Print"></div><div class="field-row"><div class="field"><label>Unit</label><select id="vr_unit">${['meter','yard','kg','gram','liter','piece','pair','dozen','hour','job'].map(u=>`<option ${d.unit===u?'selected':''}>${u}</option>`).join('')}</select></div><div class="field"><label>Rate ₹</label><input type="number" id="vr_rate" value="${d.rate||0}"></div></div><div class="field"><label>MOQ</label><input id="vr_moq" value="${escapeHTML(d.moq||'')}" placeholder="50 meter"></div>${type==='material'?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="vr_pref" '+(d.preferred?'checked':'')+'> Preferred vendor for this material</label>':''}<div class="field"><label>Notes</label><textarea id="vr_notes">${escapeHTML(d.notes||'')}</textarea></div>${historyHTML}<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorRate()">Save Rate</button></div>`);}
+function saveVendorRate(){const st=window._vendorRateState,v=DB.vendors.find(x=>x.id===st.vendorId);const d=st.data;const newRate=Number(document.getElementById('vr_rate').value)||0;const oldRate=d.rate||0;const oldUpdatedAt=d.updatedAt;d.name=document.getElementById('vr_name').value.trim();d.quality=document.getElementById('vr_quality').value.trim();d.unit=document.getElementById('vr_unit').value;d.moq=document.getElementById('vr_moq').value.trim();d.notes=document.getElementById('vr_notes').value.trim();d.preferred=document.getElementById('vr_pref')?.checked||false;d.priceHistory=d.priceHistory||[];if(!d.name){alert('Enter a name.');return;}if(st.index!==null && newRate!==oldRate){d.priceHistory.push({rate:oldRate, date:oldUpdatedAt||Date.now()});}d.rate=newRate;d.updatedAt=Date.now();const arr=st.type==='service'?(v.services||[]):(v.materials||[]);if(st.index===null)arr.push(d);else arr[st.index]=d;const data={...v,materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(st.type==='service')data.services=arr;else data.materials=arr;db.collection('vendors').doc(v.id).set(data,{merge:true}).then(()=>{closeModal();render();}).catch(e=>alert('Rate save failed: '+e.message));}
+function viewVendorRateHistory(vendorId,type,index){const v=DB.vendors.find(x=>x.id===vendorId);const arr=type==='service'?(v.services||[]):(v.materials||[]);const d=arr[index];const rows=(d.priceHistory||[]).slice().reverse();showModal(`<h2>Price History — ${escapeHTML(d.name)}</h2><div style="font-size:13px;"><div style="padding:8px 0; border-bottom:2px solid var(--line); font-weight:600;">Current: ₹${d.rate} <span style="font-weight:400; color:var(--slate);">(since ${d.updatedAt?new Date(d.updatedAt).toLocaleDateString('en-IN'):'—'})</span></div>${rows.length?rows.map(h=>`<div style="padding:8px 0; border-bottom:1px solid var(--line); color:var(--slate);">₹${h.rate} <span style="font-size:12px;">— effective until ${new Date(h.date).toLocaleDateString('en-IN')}</span></div>`).join(''):'<div style="padding:8px 0; color:var(--slate);">No earlier price changes recorded.</div>'}</div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Close</button></div>`);}
 function deleteVendorRate(vendorId,type,index){if(!confirm('Delete this rate?'))return;const v=DB.vendors.find(x=>x.id===vendorId);const arr=(type==='service'?(v.services||[]):(v.materials||[])).slice();arr.splice(index,1);const data=type==='service'?{services:arr,updatedAt:Date.now()}:{materials:arr,updatedAt:Date.now()};db.collection('vendors').doc(vendorId).set(data,{merge:true}).catch(e=>alert('Delete failed: '+e.message));}
 
 function renderSettings(){
   const s = DB.settings;
   return `
     <div class="page-header">
-      <div><h1 class="page-title">Settings</h1><p class="page-sub">Business details, GST, staff aur backup</p></div>
+      <div><h1 class="page-title">Settings</h1><p class="page-sub">Business details, GST, staff and backup</p></div>
     </div>
     <div class="panel" style="max-width:600px; margin-bottom:20px;">
       <h3>Staff Access</h3>
@@ -4084,7 +4095,7 @@ function renderSettings(){
 /* ============================= TEAM / USER MANAGEMENT (Admin only) ============================= */
 function renderTeam(){
   if(!isAdmin()){
-    return `<div class="empty-state"><div class="big">&#128274;</div>Sirf Admin ke paas Team section ka access hai.</div>`;
+    return `<div class="empty-state"><div class="big">&#128274;</div>Only Admins have access to the Team section.</div>`;
   }
   const users = DB.users || [];
   const rows = users.length ? users.map(u=>`
@@ -4092,7 +4103,7 @@ function renderTeam(){
       <td><div class="avatar-row">${avatarHTML(u.name, u.photoUrl, 'sm')}<span>${escapeHTML(u.name||'')}</span></div></td>
       <td>${escapeHTML(u.email||'')}</td>
       <td>
-        <select onchange="changeUserRole('${u.id}', this.value)" ${u.id===currentUser.uid?'disabled title="Aap apna khud ka role change nahi kar sakte"':''}>
+        <select onchange="changeUserRole('${u.id}', this.value)" ${u.id===currentUser.uid?'disabled title="You can\'t change your own role"':''}>
           <option value="staff" ${u.role==='staff'?'selected':''}>Staff</option>
           <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
         </select>
@@ -4107,13 +4118,13 @@ function renderTeam(){
         `}
       </td>
     </tr>
-  `).join('') : `<tr><td colspan="5" style="text-align:center; color:var(--slate);">Abhi tak koi staff account nahi hai.</td></tr>`;
+  `).join('') : `<tr><td colspan="5" style="text-align:center; color:var(--slate);">No staff accounts yet.</td></tr>`;
 
   return `
     <div class="page-header">
       <div>
         <h1 class="page-title">Team</h1>
-        <p class="page-sub">Staff accounts add karein, role set karein, ya access hataayein.</p>
+        <p class="page-sub">Add staff accounts, set roles, or remove access.</p>
       </div>
       <button class="btn btn-primary" onclick="openAddUserModal()">+ Add Staff</button>
     </div>
@@ -4124,12 +4135,12 @@ function renderTeam(){
       </table>
     </div>
     <div class="panel" style="max-width:600px; margin-top:20px;">
-      <h3>Kaise kaam karta hai</h3>
+      <h3>How this works</h3>
       <ul style="font-size:13px; color:var(--slate); padding-left:18px; line-height:1.7;">
-        <li><b>Admin</b> ko sab kuch dikhta hai, staff add/remove kar sakte hain, Settings badal sakte hain.</li>
-        <li><b>Staff</b> roz ka kaam (styles, invoices, orders, clients, wagera) kar sakte hain, lekin Team ya Settings nahi.</li>
-        <li>Jab kisi ko <b>Deactivate</b> karte hain, unka login turant band ho jaata hai (kuch minute mein).</li>
-        <li><b>Remove</b> karne se unka account permanently delete ho jaata hai.</li>
+        <li><b>Admin</b> can see everything, add/remove staff, and change Settings.</li>
+        <li><b>Staff</b> can do daily work (styles, invoices, orders, clients, etc.), but not Team or Settings.</li>
+        <li>When you <b>Deactivate</b> someone, their login stops working shortly after (within a few minutes).</li>
+        <li><b>Remove</b> permanently deletes their account.</li>
       </ul>
     </div>
   `;
@@ -4138,10 +4149,10 @@ function renderTeam(){
 function openAddUserModal(){
   showModal(`
     <h2>Add Staff Member</h2>
-    <div class="field"><label>Name</label><input type="text" id="nu_name" placeholder="Staff ka naam"></div>
+    <div class="field"><label>Name</label><input type="text" id="nu_name" placeholder="Staff member's name"></div>
     <div class="field"><label>Photo URL (optional)</label><input type="url" id="nu_photo" placeholder="https://... (na ho to initials dikhengi)"></div>
     <div class="field"><label>Email</label><input type="email" id="nu_email" placeholder="staff@studio.com"></div>
-    <div class="field"><label>Temporary Password</label><input type="text" id="nu_pass" placeholder="Kam se kam 6 characters"></div>
+    <div class="field"><label>Temporary Password</label><input type="text" id="nu_pass" placeholder="At least 6 characters"></div>
     <div class="field"><label>Role</label>
       <select id="nu_role">
         <option value="staff" selected>Staff</option>
@@ -4184,36 +4195,36 @@ function submitEditPhoto(uid){
 }
 function changeUserRole(uid, role){
   functionsApi.httpsCallable('setUserRole')({ uid, role })
-    .catch(err=>alert('Error: ' + (err.message||'Role change nahi ho paya.')));
+    .catch(err=>alert('Error: ' + (err.message||'Could not change role.')));
 }
 function toggleUserActive(uid, makeActive){
   functionsApi.httpsCallable('setUserActive')({ uid, active: makeActive })
-    .catch(err=>alert('Error: ' + (err.message||'Status change nahi ho paya.')));
+    .catch(err=>alert('Error: ' + (err.message||'Could not change status.')));
 }
 function removeUserPrompt(uid, email){
-  if(!confirm(`${email} ka account permanently delete karein? Ye undo nahi ho sakta.`)) return;
+  if(!confirm(`Permanently delete ${email}'s account? This cannot be undone.`)) return;
   functionsApi.httpsCallable('deleteStaffUser')({ uid })
-    .catch(err=>alert('Error: ' + (err.message||'Delete nahi ho paya.')));
+    .catch(err=>alert('Error: ' + (err.message||'Could not delete.')));
 }
 
 function openResetPasswordModal(uid, email){
   showModal(`
     <h2>Reset Password</h2>
-    <p style="font-size:13px; color:var(--slate);">${escapeHTML(email)} ke liye naya password set karein. Unka purana password turant kaam karna band ho jayega, aur ye naya password unhe bata dein.</p>
-    <div class="field"><label>Naya Password</label><input type="text" id="rp_pass" placeholder="Kam se kam 6 characters"></div>
+    <p style="font-size:13px; color:var(--slate);">Set a new password for ${escapeHTML(email)}. Their old password will stop working right away — share this new password with them.</p>
+    <div class="field"><label>New Password</label><input type="text" id="rp_pass" placeholder="At least 6 characters"></div>
     <div class="form-error" id="rp_error"></div>
-    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitResetPassword('${uid}')">Reset Karein</button>
+    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitResetPassword('${uid}')">Reset</button>
     <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="closeModal()">Cancel</button>
   `);
 }
 function submitResetPassword(uid){
   const pass = document.getElementById('rp_pass').value;
   const errEl = document.getElementById('rp_error');
-  if(!pass || pass.length < 6){ errEl.textContent = 'Kam se kam 6 characters ka password chahiye.'; return; }
+  if(!pass || pass.length < 6){ errEl.textContent = 'Password must be at least 6 characters.'; return; }
   errEl.textContent = 'Resetting...';
   functionsApi.httpsCallable('adminResetPassword')({ uid, newPassword: pass })
-    .then(()=>{ closeModal(); alert('Password reset ho gaya. Naya password staff member ko bata dein.'); })
-    .catch(err=>{ errEl.textContent = 'Error: ' + (err.message || 'Reset nahi ho paya.'); });
+    .then(()=>{ closeModal(); alert('Password reset. Share the new password with the staff member.'); })
+    .catch(err=>{ errEl.textContent = 'Error: ' + (err.message || 'Could not reset.'); });
 }
 
 /* ---- Self-service: any logged-in user (Admin or Staff) can change their
@@ -4221,11 +4232,11 @@ function submitResetPassword(uid){
 function openChangePasswordModal(){
   showModal(`
     <h2>Change Password</h2>
-    <p style="font-size:13px; color:var(--slate);">Apna naya password set karein.</p>
-    <div class="field"><label>Current Password</label><input type="password" id="cp_current" placeholder="Abhi ka password"></div>
-    <div class="field"><label>New Password</label><input type="password" id="cp_new" placeholder="Kam se kam 6 characters"></div>
+    <p style="font-size:13px; color:var(--slate);">Set your new password.</p>
+    <div class="field"><label>Current Password</label><input type="password" id="cp_current" placeholder="Your current password"></div>
+    <div class="field"><label>New Password</label><input type="password" id="cp_new" placeholder="At least 6 characters"></div>
     <div class="form-error" id="cp_error"></div>
-    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitChangePassword()">Password Update Karein</button>
+    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitChangePassword()">Update Password</button>
     <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="closeModal()">Cancel</button>
   `);
 }
@@ -4233,14 +4244,107 @@ function submitChangePassword(){
   const current = document.getElementById('cp_current').value;
   const newPass = document.getElementById('cp_new').value;
   const errEl = document.getElementById('cp_error');
-  if(!current || !newPass){ errEl.textContent = 'Dono fields bharein.'; return; }
-  if(newPass.length < 6){ errEl.textContent = 'Naya password kam se kam 6 characters ka ho.'; return; }
+  if(!current || !newPass){ errEl.textContent = 'Fill in both fields.'; return; }
+  if(newPass.length < 6){ errEl.textContent = 'New password must be at least 6 characters.'; return; }
   errEl.textContent = 'Updating...';
   const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
   currentUser.reauthenticateWithCredential(cred)
     .then(()=> currentUser.updatePassword(newPass))
-    .then(()=>{ closeModal(); alert('Password update ho gaya.'); })
-    .catch(err=>{ errEl.textContent = 'Error: ' + (err.code==='auth/wrong-password' ? 'Current password galat hai.' : (err.message||'Update nahi ho paya.')); });
+    .then(()=>{ closeModal(); alert('Password updated.'); })
+    .catch(err=>{ errEl.textContent = 'Error: ' + (err.code==='auth/wrong-password' ? 'Current password is incorrect.' : (err.message||'Could not update.')); });
+}
+
+/* ============================= QUICK LINKS ============================= */
+function renderLinks(){
+  const q = (window._linksSearch||'').toLowerCase();
+  const cats = Array.from(new Set(DB.links.map(l=>l.category).filter(Boolean))).sort();
+  const filtered = DB.links.filter(l=>{
+    if(!q) return true;
+    return (l.title||'').toLowerCase().includes(q) || (l.category||'').toLowerCase().includes(q) || (l.url||'').toLowerCase().includes(q);
+  });
+  const grouped = {};
+  filtered.forEach(l=>{
+    const cat = l.category || 'Other';
+    grouped[cat] = grouped[cat] || [];
+    grouped[cat].push(l);
+  });
+  const groupNames = Object.keys(grouped).sort();
+
+  function faviconFor(url){
+    try{ const host = new URL(url).hostname; return `https://www.google.com/s2/favicons?sz=32&domain=${host}`; }
+    catch(e){ return ''; }
+  }
+
+  const groupsHTML = groupNames.length ? groupNames.map(cat=>`
+    <div class="panel" style="margin-bottom:18px;">
+      <h3 style="margin-bottom:10px;">${escapeHTML(cat)}</h3>
+      ${grouped[cat].map(l=>`
+        <div style="display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);">
+          <img src="${faviconFor(l.url)}" style="width:20px; height:20px; border-radius:4px; flex-shrink:0;" onerror="this.style.visibility='hidden'">
+          <a href="${escapeHTML(l.url)}" target="_blank" rel="noopener" style="flex:1; min-width:0; color:var(--charcoal); font-weight:600; font-size:13.5px; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(l.title)}</a>
+          <button class="btn btn-ghost btn-sm" onclick="openLinkModal('${l.id}')">Edit</button>
+          ${isAdmin()? `<button class="btn btn-danger btn-sm" onclick="deleteLink('${l.id}')">Delete</button>` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `).join('') : `<div class="empty-state"><div class="big">&#128279;</div>No links yet. Add your Amazon/Myntra listing, Google Drive folders, or any other important link here.</div>`;
+
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Links</h1>
+        <p class="page-sub">All your important links — marketplaces, Google Drive folders, backend, and more — in one place.</p>
+      </div>
+      <button class="btn btn-primary" onclick="openLinkModal()">+ Add Link</button>
+    </div>
+    <div style="margin-bottom:18px;">
+      <input type="text" placeholder="🔍 Search links or categories..." value="${escapeHTML(window._linksSearch||'')}"
+        oninput="window._linksSearch=this.value; render();"
+        style="width:100%; max-width:360px; padding:9px 12px; border:1px solid var(--line); border-radius:8px; font-size:13px; box-sizing:border-box;">
+    </div>
+    ${groupsHTML}
+  `;
+}
+
+function openLinkModal(id){
+  const l = id ? DB.links.find(x=>x.id===id) : {id:null, title:'', url:'', category:'', notes:''};
+  const cats = Array.from(new Set(DB.links.map(x=>x.category).filter(Boolean))).sort();
+  window._linkEdit = JSON.parse(JSON.stringify(l));
+  showModal(`
+    <h2>${id?'Edit':'Add'} Link</h2>
+    <div class="field"><label>Title</label><input id="lk_title" value="${escapeHTML(l.title||'')}" placeholder="e.g. Amazon Listing, Client X — Costing Sheet"></div>
+    <div class="field"><label>URL</label><input id="lk_url" type="url" value="${escapeHTML(l.url||'')}" placeholder="https://..."></div>
+    <div class="field">
+      <label>Category</label>
+      <input id="lk_category" list="lk_cat_list" value="${escapeHTML(l.category||'')}" placeholder="e.g. Marketplace, Google Drive, Backend">
+      <datalist id="lk_cat_list">${cats.map(c=>`<option value="${escapeHTML(c)}">`).join('')}</datalist>
+    </div>
+    <div class="field"><label>Notes (optional)</label><textarea id="lk_notes">${escapeHTML(l.notes||'')}</textarea></div>
+    <div class="form-error" id="lk_error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLink()">Save Link</button>
+    </div>
+  `);
+}
+function saveLink(){
+  const title = document.getElementById('lk_title').value.trim();
+  let url = document.getElementById('lk_url').value.trim();
+  const category = document.getElementById('lk_category').value.trim();
+  const notes = document.getElementById('lk_notes').value.trim();
+  const errEl = document.getElementById('lk_error');
+  if(!title || !url){ errEl.textContent = 'Title and URL are required.'; return; }
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  const l = window._linkEdit;
+  const data = { title, url, category, notes, updatedAt: Date.now() };
+  const ref = l.id ? db.collection('links').doc(l.id) : db.collection('links').doc();
+  if(!l.id){ data.createdAt = Date.now(); data.createdBy = currentUser.uid; }
+  ref.set(data, {merge:true}).then(()=>{ closeModal(); render(); }).catch(e=>{ errEl.textContent = 'Error: ' + e.message; });
+}
+function deleteLink(id){
+  if(!isAdmin()){ alert('Only Admins can delete links.'); return; }
+  if(!confirm('Delete this link?')) return;
+  db.collection('links').doc(id).delete().catch(e=>alert('Delete failed: '+e.message));
 }
 
 function saveSettings(){
@@ -4310,7 +4414,7 @@ function toggleTailorPassword(id, password){
 }
 function copyTailorPassword(password){
   navigator.clipboard.writeText(password).then(()=>{
-    alert('Password copied! Tailor ko WhatsApp se bhej do.');
+    alert('Password copied! Send it to the tailor via WhatsApp.');
   }).catch(err=>alert('Copy failed: '+err.message));
 }
 function showAddVendorForm(){
