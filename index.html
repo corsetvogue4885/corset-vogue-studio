@@ -387,6 +387,57 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
 @media print{
   .mobile-topbar, .sidebar-backdrop{display:none !important;}
 }
+
+/* ============================================================
+   VISUAL REFRESH — avatars, colored nav icons, donut/progress ring
+   ============================================================ */
+:root{
+  --avatar-palette-1:#7C3AED; --avatar-palette-2:#EC4899; --avatar-palette-3:#F59E0B;
+  --avatar-palette-4:#10B981; --avatar-palette-5:#3B82F6; --avatar-palette-6:#EF4444;
+  --success:#10B981; --success-bg:#DCFCE7;
+  --warn:#F59E0B; --warn-bg:#FEF3C7;
+  --danger-bg:#FEE2E2;
+}
+
+/* Avatar circles (initials-based, Slack-style) */
+.avatar{
+  display:inline-flex; align-items:center; justify-content:center;
+  border-radius:50%; color:#fff; font-weight:700; flex-shrink:0;
+  font-family:'Inter',sans-serif; letter-spacing:0.2px;
+  background-size:cover; background-position:center;
+}
+.avatar-sm{width:28px; height:28px; font-size:11px;}
+.avatar-md{width:38px; height:38px; font-size:13px;}
+.avatar-lg{width:56px; height:56px; font-size:18px;}
+.avatar-row{display:flex; align-items:center; gap:10px;}
+
+/* Nav items get a small colored icon chip, like a dashboard app */
+.nav-item{display:flex; align-items:center; gap:10px;}
+.nav-icon-chip{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:26px; height:26px; border-radius:8px; font-size:13px;
+  background:rgba(255,255,255,0.08); flex-shrink:0;
+}
+.nav-item.active .nav-icon-chip{background:var(--gold); color:#fff;}
+
+/* Status pill badges */
+.status-pill{
+  display:inline-flex; align-items:center; gap:5px; padding:3px 10px;
+  border-radius:99px; font-size:11.5px; font-weight:600;
+}
+.status-pill.on{background:var(--success-bg); color:#15803D;}
+.status-pill.off{background:var(--danger-bg); color:#B91C1C;}
+.status-pill .dot{width:7px; height:7px; border-radius:50%; background:currentColor;}
+
+/* Donut / progress ring, reusable via renderDonutSVG() */
+.donut-wrap{display:flex; align-items:center; gap:24px; flex-wrap:wrap;}
+.donut-legend{display:flex; flex-direction:column; gap:10px; font-size:13px;}
+.donut-legend-item{display:flex; align-items:center; gap:8px;}
+.donut-legend-dot{width:10px; height:10px; border-radius:50%;}
+.donut-center-label{font-family:'Fraunces',serif; font-weight:700;}
+
+/* Rounded, consistent elevation for all panels/cards (refresh pass) */
+.card, .panel{border-radius:16px;}
 </style>
 </head>
 <body>
@@ -413,23 +464,26 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
   <div class="sidebar no-print">
     <div class="brand" id="sidebarBrand">Bahi<span>.</span></div>
     <div class="brand-sub">Style &amp; Invoice Book</div>
-    <div class="nav-item active" data-page="dashboard"><span class="nav-icon">&#9670;</span> Dashboard</div>
-    <div class="nav-item" data-page="styles"><span class="nav-icon">&#10022;</span> Styles</div>
-    <div class="nav-item" data-page="listings"><span class="nav-icon">&#9776;</span> Listing Manager</div>
-    <div class="nav-item" data-page="costing"><span class="nav-icon">&#8377;</span> Costing</div>
-    <div class="nav-item" data-page="vendors"><span class="nav-icon">&#9881;</span> Vendors</div>
-    <div class="nav-item" data-page="catalog"><span class="nav-icon">&#128218;</span> Catalog</div>
-    <div class="nav-item" data-page="clients"><span class="nav-icon">&#9786;</span> Clients</div>
-    <div class="nav-item" data-page="orders"><span class="nav-icon">&#128230;</span> Orders</div>
-    <div class="nav-item" data-page="invoices"><span class="nav-icon">&#9636;</span> Invoices</div>
-    <div class="nav-item" data-page="challans"><span class="nav-icon">&#128666;</span> Challans</div>
-    <div class="nav-item" data-page="newchallan"><span class="nav-icon">&#9998;</span> New Challan</div>
-    <div class="nav-item" data-page="settings"><span class="nav-icon">&#9881;</span> Settings</div>
+    <div class="nav-item active" data-page="dashboard"><span class="nav-icon-chip">&#9670;</span> Dashboard</div>
+    <div class="nav-item" data-page="styles"><span class="nav-icon-chip">&#10022;</span> Styles</div>
+    <div class="nav-item" data-page="listings"><span class="nav-icon-chip">&#9776;</span> Listing Manager</div>
+    <div class="nav-item" data-page="costing"><span class="nav-icon-chip">&#8377;</span> Costing</div>
+    <div class="nav-item" data-page="vendors"><span class="nav-icon-chip">&#9881;</span> Vendors</div>
+    <div class="nav-item" data-page="catalog"><span class="nav-icon-chip">&#128218;</span> Catalog</div>
+    <div class="nav-item" data-page="clients"><span class="nav-icon-chip">&#9786;</span> Clients</div>
+    <div class="nav-item" data-page="orders"><span class="nav-icon-chip">&#128230;</span> Orders</div>
+    <div class="nav-item" data-page="invoices"><span class="nav-icon-chip">&#9636;</span> Invoices</div>
+    <div class="nav-item" data-page="challans"><span class="nav-icon-chip">&#128666;</span> Challans</div>
+    <div class="nav-item" data-page="newchallan"><span class="nav-icon-chip">&#9998;</span> New Challan</div>
+    <div class="nav-item admin-only-nav" data-page="settings"><span class="nav-icon-chip">&#9881;</span> Settings</div>
+    <div class="nav-item admin-only-nav" data-page="team"><span class="nav-icon-chip">&#128101;</span> Team</div>
     <div style="padding:12px; border-top:1px solid var(--line); margin-top:8px;">
       <input type="text" id="globalSearch" placeholder="🔍 Search styles, invoices..." style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:6px; font-size:12px; box-sizing:border-box;" onkeyup="performSearch(this.value)">
     </div>
     <div class="sidebar-footer">
       <div class="sidebar-user" id="sidebarUser"></div>
+      <span class="sidebar-signout" onclick="openChangePasswordModal()" style="cursor:pointer; text-decoration:underline;">Change Password</span>
+      &nbsp;·&nbsp;
       <span class="sidebar-signout" onclick="signOutUser()">Sign Out</span>
       <div style="margin-top:8px;">Data syncs live across all staff logins.</div>
     </div>
@@ -448,6 +502,7 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
 
 <!-- Libraries for PDF and Excel export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -472,11 +527,12 @@ function isFirebaseConfigured(){
   return firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('PASTE_YOUR');
 }
 
-let firebaseApp, auth, db;
+let firebaseApp, auth, db, functionsApi;
 if(isFirebaseConfigured()){
   firebaseApp = firebase.initializeApp(firebaseConfig);
   auth = firebase.auth();
   db = firebase.firestore();
+  functionsApi = firebase.functions();
 }
 
 /* ============================= HELPERS ============================= */
@@ -504,6 +560,28 @@ function styleTotalCostUSD(s, usdRate){
   return comp(s.cost, s.costUSD) + comp(s.packingCost, s.packingCostUSD) + comp(s.shippingCost, s.shippingCostUSD) + comp(s.otherCost, s.otherCostUSD);
 }
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+/* ---- Avatar helper: initials circle (Slack-style) or photo if available ---- */
+const AVATAR_COLORS = ['var(--avatar-palette-1)','var(--avatar-palette-2)','var(--avatar-palette-3)','var(--avatar-palette-4)','var(--avatar-palette-5)','var(--avatar-palette-6)'];
+function initialsOf(name){
+  const parts = String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return '?';
+  if(parts.length===1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0]+parts[parts.length-1][0]).toUpperCase();
+}
+function colorFor(seed){
+  const s = String(seed||'');
+  let h = 0;
+  for(let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+function avatarHTML(name, photoUrl, size){
+  size = size || 'md';
+  if(photoUrl){
+    return `<div class="avatar avatar-${size}" style="background-image:url('${escapeHTML(photoUrl)}');" title="${escapeHTML(name||'')}"></div>`;
+  }
+  return `<div class="avatar avatar-${size}" style="background:${colorFor(name)};" title="${escapeHTML(name||'')}">${escapeHTML(initialsOf(name))}</div>`;
+}
 
 const INDIAN_STATES = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Jammu and Kashmir","Ladakh","Puducherry","Chandigarh"];
 
@@ -589,17 +667,23 @@ let DB = {
   vendors: [],
   costings: [],
   listings: [],
-  listingAccounts: []
+  listingAccounts: [],
+  users: []
 };
 let currentUser = null;
-let currentUserRole = 'admin'; // 'admin' or 'tailor'
+let currentUserRole = 'admin'; // 'admin' or 'tailor' -- used by the separate tailor self-service portal, unrelated to staff roles below
 let currentTailorId = null;
 let listenersActive = false;
 let unsubscribers = [];
-let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false };
+let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false, users:false };
+
+/* ---- Staff access control (Admin / Staff roles) ---- */
+let appRole = null;         // 'admin' | 'staff' | null (not yet known)
+let appRoleReady = false;   // becomes true once we've read the ID token claims
+const ADMIN_ONLY_PAGES = ['settings','team'];
 
 function allLoaded(){
-  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts;
+  return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts && loadedFlags.users;
 }
 
 function attachListeners(){
@@ -672,6 +756,13 @@ function attachListeners(){
     loadedFlags.listingAccounts = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.listingAccounts = true; afterSync(); }));
+
+  unsubscribers.push(db.collection('users').onSnapshot(snap=>{
+    DB.users = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    loadedFlags.users = true;
+    afterSync();
+    render();
+  }, err=>{ console.error(err); loadedFlags.users = true; afterSync(); }));
 }
 function detachListeners(){
   unsubscribers.forEach(u=>{ try{ u(); }catch(e){} });
@@ -788,11 +879,18 @@ if(!isFirebaseConfigured()){
       currentUserRole = 'admin';  // Reset to admin for Firebase auth
       currentTailorId = null;
       currentUser = user;
+      appRoleReady = false;
       document.getElementById('loginScreen').style.display='none';
       document.getElementById('loadingScreen').style.display='flex';
-      attachListeners();
+      refreshAppRole().then(()=>{
+        attachListeners();
+      });
+      startAccessWatchdog();
     }else{
       currentUser = null;
+      appRole = null;
+      appRoleReady = false;
+      stopAccessWatchdog();
       if(currentUserRole==='tailor'){
         showLoginScreen();  // Show login for tailor signout
       }else{
@@ -804,11 +902,51 @@ if(!isFirebaseConfigured()){
   });
 }
 
+/* ---- Reads the 'role' custom claim (admin/staff) set by our Cloud Function ---- */
+function refreshAppRole(forceTokenRefresh){
+  if(!currentUser) return Promise.resolve();
+  return currentUser.getIdTokenResult(!!forceTokenRefresh).then(res=>{
+    appRole = res.claims && res.claims.role ? res.claims.role : null;
+    appRoleReady = true;
+    render();
+  }).catch(()=>{ appRoleReady = true; });
+}
+
+/* ---- Watchdog: periodically force a token refresh so a disabled/removed
+   staff account gets signed out quickly instead of waiting up to 1hr for the
+   token to naturally expire. ---- */
+let accessWatchdogTimer = null;
+function startAccessWatchdog(){
+  stopAccessWatchdog();
+  accessWatchdogTimer = setInterval(()=>{
+    if(!currentUser) return;
+    currentUser.getIdToken(true).then(()=>{ refreshAppRole(false); }).catch(()=>{
+      // Token refresh failed -- account was disabled/deleted. Sign out.
+      auth.signOut();
+    });
+  }, 3*60*1000);
+}
+function stopAccessWatchdog(){
+  if(accessWatchdogTimer){ clearInterval(accessWatchdogTimer); accessWatchdogTimer = null; }
+}
+function isAdmin(){ return appRole === 'admin'; }
+function bootstrapAsAdmin(){
+  const msgEl = document.getElementById('bootstrapMsg');
+  if(msgEl) msgEl.textContent = 'Setting up...';
+  functionsApi.httpsCallable('bootstrapFirstAdmin')({})
+    .then(()=> refreshAppRole(true))
+    .catch(err=>{ if(msgEl) msgEl.textContent = 'Error: ' + (err.message || 'Pehle se hi ek Admin maujood hai. Existing Admin se apna role set karwaayein.'); });
+}
+
 /* ============================= ROUTER ============================= */
 let currentPage = 'dashboard';
 let newInvoiceState = null;
 
 function navigate(page){
+  if(ADMIN_ONLY_PAGES.includes(page) && appRoleReady && !isAdmin()){
+    alert('Sirf Admin ke paas is section ka access hai.');
+    return;
+  }
   currentPage = page;
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active', el.dataset.page===page);
@@ -838,9 +976,35 @@ function render(){
   const mobileBrandEl = document.getElementById('mobileTopbarBrand');
   if(mobileBrandEl) mobileBrandEl.innerHTML = brandHTML;
   const userEl = document.getElementById('sidebarUser');
-  if(userEl) userEl.textContent = currentUser? currentUser.email : '';
+  if(userEl){
+    if(currentUser){
+      const myProfile = (DB.users||[]).find(u=>u.id===currentUser.uid);
+      const displayName = (myProfile && myProfile.name) || currentUser.email;
+      userEl.innerHTML = `
+        <div class="avatar-row">
+          ${avatarHTML(displayName, myProfile && myProfile.photoUrl, 'sm')}
+          <div style="min-width:0;">
+            <div style="font-weight:600; font-size:12.5px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(displayName)}</div>
+            <div style="font-size:10.5px; color:#9AA5C0; text-transform:capitalize;">${escapeHTML(appRole||'')}</div>
+          </div>
+        </div>`;
+    } else {
+      userEl.innerHTML = '';
+    }
+  }
+  document.querySelectorAll('.admin-only-nav').forEach(el=>{ el.style.display = isAdmin() ? '' : 'none'; });
+  if(ADMIN_ONLY_PAGES.includes(currentPage) && appRoleReady && !isAdmin()){
+    currentPage = 'dashboard';
+  }
   const main = document.getElementById('main');
-  if(currentPage==='dashboard') main.innerHTML = renderDashboard();
+  const bootstrapBanner = (appRoleReady && !appRole) ? `
+    <div class="panel" style="background:#FFF7E0; border:1px solid #E4A73B; margin-bottom:20px;">
+      <b>Setup pending:</b> Aapke account mein abhi koi role (Admin/Staff) set nahi hai.
+      Agar aap is studio ke pehle/owner account hain, to neeche click karke khud ko Admin banaayein.
+      <div style="margin-top:10px;"><button class="btn btn-primary" onclick="bootstrapAsAdmin()">Mujhe Admin banaayein</button></div>
+      <div id="bootstrapMsg" style="margin-top:8px; font-size:12.5px;"></div>
+    </div>` : '';
+  if(currentPage==='dashboard') main.innerHTML = bootstrapBanner + renderDashboard();
   else if(currentPage==='styles') main.innerHTML = renderStyles();
   else if(currentPage==='listings') main.innerHTML = renderListingManager();
   else if(currentPage==='listingdetail') main.innerHTML = renderListingDetail(window._viewingListingId);
@@ -861,6 +1025,7 @@ function render(){
   else if(currentPage==='newchallan') main.innerHTML = renderChallanBuilder();
   else if(currentPage==='viewchallan') main.innerHTML = renderChallanView(window._viewingChallanId);
   else if(currentPage==='settings') main.innerHTML = renderSettings();
+  else if(currentPage==='team') main.innerHTML = renderTeam();
   else if(currentPage==='search') main.innerHTML = renderSearchResults(window._searchResults||[]);
 }
 
@@ -911,16 +1076,40 @@ function getTopClients(invoices, limit){
   });
   return Object.entries(map).map(([name,total])=>({name,total})).sort((a,b)=>b.total-a.total).slice(0,limit);
 }
+function renderDonutSVG(percent, centerLabel, legendItems){
+  const p = Math.max(0, Math.min(100, percent));
+  const r = 54, circumference = 2*Math.PI*r;
+  const filled = (p/100)*circumference;
+  return `
+    <div class="donut-wrap">
+      <svg width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r="${r}" fill="none" stroke="#EFE9DA" stroke-width="14"></circle>
+        <circle cx="70" cy="70" r="${r}" fill="none" stroke="var(--gold)" stroke-width="14"
+          stroke-dasharray="${filled} ${circumference-filled}" stroke-linecap="round"
+          transform="rotate(-90 70 70)"></circle>
+        <text x="70" y="75" text-anchor="middle" font-size="24" font-weight="700" class="donut-center-label" fill="var(--charcoal)">${escapeHTML(centerLabel)}</text>
+      </svg>
+      <div class="donut-legend">
+        ${(legendItems||[]).map(li=>`
+          <div class="donut-legend-item"><span class="donut-legend-dot" style="background:${li.color};"></span>${escapeHTML(li.label)}</div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
 function renderBarList(data){
   if(!data.length) return `<div style="color:var(--slate); font-size:13px; padding:10px 0;">No data available yet.</div>`;
   const maxVal = Math.max(...data.map(d=>d.total), 1);
   return data.map(d=>`
-    <div style="margin-bottom:12px;">
-      <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;">
-        <span>${escapeHTML(d.name)}</span><span class="mono">${fmtINR(d.total)}</span>
-      </div>
-      <div style="background:#EFE9DA; border-radius:6px; height:8px; overflow:hidden;">
-        <div style="background:var(--gold); height:100%; width:${(d.total/maxVal)*100}%;"></div>
+    <div class="avatar-row" style="margin-bottom:14px; align-items:center;">
+      ${avatarHTML(d.name, null, 'sm')}
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px;">
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(d.name)}</span><span class="mono">${fmtINR(d.total)}</span>
+        </div>
+        <div style="background:#EFE9DA; border-radius:6px; height:8px; overflow:hidden;">
+          <div style="background:var(--gold); height:100%; width:${(d.total/maxVal)*100}%;"></div>
+        </div>
       </div>
     </div>
   `).join('');
@@ -933,6 +1122,10 @@ function renderDashboard(){
   const totalInvoices = DB.invoices.length;
   const totalRevenue = DB.invoices.reduce((s,i)=>s+i.total,0);
   const recent = [...DB.invoices].sort((a,b)=>b.createdAt-a.createdAt).slice(0,5);
+  const monthBuckets = getMonthlyRevenue(DB.invoices, 2);
+  const lastMonthTotal = monthBuckets[0] ? monthBuckets[0].total : 0;
+  const thisMonthTotal = monthBuckets[1] ? monthBuckets[1].total : 0;
+  const monthPercent = lastMonthTotal>0 ? (thisMonthTotal/lastMonthTotal)*100 : (thisMonthTotal>0?100:0);
   return `
     <div class="page-header">
       <div>
@@ -959,9 +1152,18 @@ function renderDashboard(){
       </div></div>
     </div>
 
-    <div class="panel" style="margin-bottom:26px;">
-      <h3>Monthly Revenue (Last 6 Months)</h3>
-      ${totalInvoices? renderMonthlyChartSVG(getMonthlyRevenue(DB.invoices, 6)) : `<div style="color:var(--slate); font-size:13px;">No data available yet.</div>`}
+    <div class="grid" style="grid-template-columns:2fr 1fr; margin-bottom:26px; align-items:stretch;">
+      <div class="panel">
+        <h3>Monthly Revenue (Last 6 Months)</h3>
+        ${totalInvoices? renderMonthlyChartSVG(getMonthlyRevenue(DB.invoices, 6)) : `<div style="color:var(--slate); font-size:13px;">No data available yet.</div>`}
+      </div>
+      <div class="panel">
+        <h3>This Month vs Last Month</h3>
+        ${renderDonutSVG(monthPercent, Math.round(monthPercent)+'%', [
+          {color:'var(--gold)', label:'This month: '+fmtINR(thisMonthTotal)},
+          {color:'#EFE9DA', label:'Last month: '+fmtINR(lastMonthTotal)}
+        ])}
+      </div>
     </div>
 
     <div class="grid" style="grid-template-columns:1fr 1fr; margin-bottom:30px;">
@@ -3878,6 +4080,169 @@ function renderSettings(){
     </div>
   `;
 }
+
+/* ============================= TEAM / USER MANAGEMENT (Admin only) ============================= */
+function renderTeam(){
+  if(!isAdmin()){
+    return `<div class="empty-state"><div class="big">&#128274;</div>Sirf Admin ke paas Team section ka access hai.</div>`;
+  }
+  const users = DB.users || [];
+  const rows = users.length ? users.map(u=>`
+    <tr>
+      <td><div class="avatar-row">${avatarHTML(u.name, u.photoUrl, 'sm')}<span>${escapeHTML(u.name||'')}</span></div></td>
+      <td>${escapeHTML(u.email||'')}</td>
+      <td>
+        <select onchange="changeUserRole('${u.id}', this.value)" ${u.id===currentUser.uid?'disabled title="Aap apna khud ka role change nahi kar sakte"':''}>
+          <option value="staff" ${u.role==='staff'?'selected':''}>Staff</option>
+          <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+        </select>
+      </td>
+      <td>${u.active===false ? '<span style="color:var(--brick,#B14A3C); font-weight:600;">Disabled</span>' : '<span style="color:#2E7D32; font-weight:600;">Active</span>'}</td>
+      <td style="white-space:nowrap;">
+        ${u.id===currentUser.uid ? '<span style="color:var(--slate); font-size:12px;">(Aap)</span>' : `
+          <button class="btn btn-ghost btn-sm" onclick="toggleUserActive('${u.id}', ${u.active===false})">${u.active===false?'Activate':'Deactivate'}</button>
+          <button class="btn btn-ghost btn-sm" onclick="openEditPhotoModal('${u.id}','${escapeHTML(u.photoUrl||'')}')">Photo</button>
+          <button class="btn btn-ghost btn-sm" onclick="openResetPasswordModal('${u.id}','${escapeHTML(u.email||'')}')">Reset Password</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--brick,#B14A3C);" onclick="removeUserPrompt('${u.id}','${escapeHTML(u.email||'')}')">Remove</button>
+        `}
+      </td>
+    </tr>
+  `).join('') : `<tr><td colspan="5" style="text-align:center; color:var(--slate);">Abhi tak koi staff account nahi hai.</td></tr>`;
+
+  return `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Team</h1>
+        <p class="page-sub">Staff accounts add karein, role set karein, ya access hataayein.</p>
+      </div>
+      <button class="btn btn-primary" onclick="openAddUserModal()">+ Add Staff</button>
+    </div>
+    <div class="panel" style="overflow:auto;">
+      <table style="width:100%;">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="panel" style="max-width:600px; margin-top:20px;">
+      <h3>Kaise kaam karta hai</h3>
+      <ul style="font-size:13px; color:var(--slate); padding-left:18px; line-height:1.7;">
+        <li><b>Admin</b> ko sab kuch dikhta hai, staff add/remove kar sakte hain, Settings badal sakte hain.</li>
+        <li><b>Staff</b> roz ka kaam (styles, invoices, orders, clients, wagera) kar sakte hain, lekin Team ya Settings nahi.</li>
+        <li>Jab kisi ko <b>Deactivate</b> karte hain, unka login turant band ho jaata hai (kuch minute mein).</li>
+        <li><b>Remove</b> karne se unka account permanently delete ho jaata hai.</li>
+      </ul>
+    </div>
+  `;
+}
+
+function openAddUserModal(){
+  showModal(`
+    <h2>Add Staff Member</h2>
+    <div class="field"><label>Name</label><input type="text" id="nu_name" placeholder="Staff ka naam"></div>
+    <div class="field"><label>Photo URL (optional)</label><input type="url" id="nu_photo" placeholder="https://... (na ho to initials dikhengi)"></div>
+    <div class="field"><label>Email</label><input type="email" id="nu_email" placeholder="staff@studio.com"></div>
+    <div class="field"><label>Temporary Password</label><input type="text" id="nu_pass" placeholder="Kam se kam 6 characters"></div>
+    <div class="field"><label>Role</label>
+      <select id="nu_role">
+        <option value="staff" selected>Staff</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="form-error" id="nu_error"></div>
+    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitAddUser()">Add Staff</button>
+    <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="closeModal()">Cancel</button>
+  `);
+}
+function submitAddUser(){
+  const name = document.getElementById('nu_name').value.trim();
+  const photoUrl = document.getElementById('nu_photo').value.trim();
+  const email = document.getElementById('nu_email').value.trim();
+  const password = document.getElementById('nu_pass').value;
+  const role = document.getElementById('nu_role').value;
+  const errEl = document.getElementById('nu_error');
+  if(!name || !email || !password){ errEl.textContent = 'Sab fields bharein.'; return; }
+  if(password.length < 6){ errEl.textContent = 'Password kam se kam 6 characters ka ho.'; return; }
+  errEl.textContent = 'Adding...';
+  functionsApi.httpsCallable('createStaffUser')({ name, email, password, role, photoUrl })
+    .then(()=>{ closeModal(); })
+    .catch(err=>{ errEl.textContent = 'Error: ' + (err.message || 'Kuch galat hua.'); });
+}
+function openEditPhotoModal(uid, currentUrl){
+  showModal(`
+    <h2>Profile Photo</h2>
+    <div class="field"><label>Photo URL</label><input type="url" id="ep_url" value="${escapeHTML(currentUrl||'')}" placeholder="https://..."></div>
+    <div class="form-error" id="ep_error"></div>
+    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitEditPhoto('${uid}')">Save</button>
+    <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="closeModal()">Cancel</button>
+  `);
+}
+function submitEditPhoto(uid){
+  const url = document.getElementById('ep_url').value.trim();
+  db.collection('users').doc(uid).update({ photoUrl: url })
+    .then(()=>closeModal())
+    .catch(err=>{ document.getElementById('ep_error').textContent = 'Error: ' + err.message; });
+}
+function changeUserRole(uid, role){
+  functionsApi.httpsCallable('setUserRole')({ uid, role })
+    .catch(err=>alert('Error: ' + (err.message||'Role change nahi ho paya.')));
+}
+function toggleUserActive(uid, makeActive){
+  functionsApi.httpsCallable('setUserActive')({ uid, active: makeActive })
+    .catch(err=>alert('Error: ' + (err.message||'Status change nahi ho paya.')));
+}
+function removeUserPrompt(uid, email){
+  if(!confirm(`${email} ka account permanently delete karein? Ye undo nahi ho sakta.`)) return;
+  functionsApi.httpsCallable('deleteStaffUser')({ uid })
+    .catch(err=>alert('Error: ' + (err.message||'Delete nahi ho paya.')));
+}
+
+function openResetPasswordModal(uid, email){
+  showModal(`
+    <h2>Reset Password</h2>
+    <p style="font-size:13px; color:var(--slate);">${escapeHTML(email)} ke liye naya password set karein. Unka purana password turant kaam karna band ho jayega, aur ye naya password unhe bata dein.</p>
+    <div class="field"><label>Naya Password</label><input type="text" id="rp_pass" placeholder="Kam se kam 6 characters"></div>
+    <div class="form-error" id="rp_error"></div>
+    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitResetPassword('${uid}')">Reset Karein</button>
+    <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="closeModal()">Cancel</button>
+  `);
+}
+function submitResetPassword(uid){
+  const pass = document.getElementById('rp_pass').value;
+  const errEl = document.getElementById('rp_error');
+  if(!pass || pass.length < 6){ errEl.textContent = 'Kam se kam 6 characters ka password chahiye.'; return; }
+  errEl.textContent = 'Resetting...';
+  functionsApi.httpsCallable('adminResetPassword')({ uid, newPassword: pass })
+    .then(()=>{ closeModal(); alert('Password reset ho gaya. Naya password staff member ko bata dein.'); })
+    .catch(err=>{ errEl.textContent = 'Error: ' + (err.message || 'Reset nahi ho paya.'); });
+}
+
+/* ---- Self-service: any logged-in user (Admin or Staff) can change their
+   own password from their phone/computer. ---- */
+function openChangePasswordModal(){
+  showModal(`
+    <h2>Change Password</h2>
+    <p style="font-size:13px; color:var(--slate);">Apna naya password set karein.</p>
+    <div class="field"><label>Current Password</label><input type="password" id="cp_current" placeholder="Abhi ka password"></div>
+    <div class="field"><label>New Password</label><input type="password" id="cp_new" placeholder="Kam se kam 6 characters"></div>
+    <div class="form-error" id="cp_error"></div>
+    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitChangePassword()">Password Update Karein</button>
+    <button class="btn btn-ghost" style="width:100%; margin-top:8px;" onclick="closeModal()">Cancel</button>
+  `);
+}
+function submitChangePassword(){
+  const current = document.getElementById('cp_current').value;
+  const newPass = document.getElementById('cp_new').value;
+  const errEl = document.getElementById('cp_error');
+  if(!current || !newPass){ errEl.textContent = 'Dono fields bharein.'; return; }
+  if(newPass.length < 6){ errEl.textContent = 'Naya password kam se kam 6 characters ka ho.'; return; }
+  errEl.textContent = 'Updating...';
+  const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, current);
+  currentUser.reauthenticateWithCredential(cred)
+    .then(()=> currentUser.updatePassword(newPass))
+    .then(()=>{ closeModal(); alert('Password update ho gaya.'); })
+    .catch(err=>{ errEl.textContent = 'Error: ' + (err.code==='auth/wrong-password' ? 'Current password galat hai.' : (err.message||'Update nahi ho paya.')); });
+}
+
 function saveSettings(){
   const data = {
     bizName: document.getElementById('s_name').value.trim() || 'Corset Vogue Studio',
