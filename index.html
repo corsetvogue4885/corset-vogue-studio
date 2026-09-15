@@ -361,6 +361,27 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
 }
 @keyframes spin{to{transform:rotate(360deg);}}
 
+/* ---------- Global Back Button ---------- */
+.global-back-btn{
+  display:none; align-items:center; gap:6px; background:none; border:none; cursor:pointer;
+  color:var(--sidebar-text); font-size:22px; padding:2px 8px; line-height:1; border-radius:6px;
+}
+.global-back-btn.show{display:inline-flex;}
+.global-back-btn:active{background:rgba(110,52,130,0.12);}
+.desktop-back-btn{
+  display:none; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); cursor:pointer;
+  color:var(--ink); font-size:13px; padding:7px 14px; border-radius:8px;
+  position:fixed; top:16px; right:24px; z-index:120; box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+.desktop-back-btn.show{display:inline-flex;}
+.desktop-back-btn:hover{background:var(--panel-alt,#f5f3ee);}
+@media (min-width: 861px){
+  .global-back-btn{display:none !important;}
+}
+@media (max-width: 860px){
+  .desktop-back-btn{display:none !important;}
+}
+
 /* ---------- Mobile responsive ---------- */
 .mobile-topbar{display:none;}
 .sidebar-backdrop{display:none;}
@@ -534,7 +555,9 @@ body.dark-mode .style-img{background:#232842; color:#5B6478;}
 </head>
 <body>
 
+<button class="desktop-back-btn no-print" id="desktopBackBtn" onclick="goBack()">← Back</button>
 <div class="mobile-topbar no-print">
+  <button class="global-back-btn" id="mobileBackBtn" onclick="goBack()">←</button>
   <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
   <div class="brand" id="mobileTopbarBrand" style="flex:1; justify-content:center;"></div>
   <div style="width:28px;"></div>
@@ -1221,15 +1244,18 @@ let currentPage = (function(){
   return KNOWN_PAGES.includes(h) ? h : 'dashboard';
 })();
 let _lastHistoryPage = null;
+let navHistory = [];
 window.addEventListener('popstate', function(){
   const h = (location.hash||'').replace('#','');
   currentPage = KNOWN_PAGES.includes(h) ? h : 'dashboard';
   _lastHistoryPage = currentPage;
+  if(navHistory.length) navHistory.pop();
   render();
 });
 let newInvoiceState = null;
 
-function navigate(page){
+function navigate(page, opts){
+  opts = opts || {};
   if(ADMIN_ONLY_PAGES.includes(page) && appRoleReady && !isAdmin()){
     alert('Only Admins have access to this section.');
     return;
@@ -1242,8 +1268,19 @@ function navigate(page){
     alert('Your account does not have access to this section.');
     return;
   }
+  if(!opts.isBack && page !== currentPage){
+    navHistory.push(currentPage);
+  }
   currentPage = page;
   render();
+}
+function goBack(){
+  if(navHistory.length){
+    const prev = navHistory.pop();
+    navigate(prev, {isBack:true});
+  } else if(currentPage !== 'dashboard'){
+    navigate('dashboard', {isBack:true});
+  }
 }
 document.querySelectorAll('.nav-item').forEach(el=>{
   el.addEventListener('click', ()=>{
@@ -1298,6 +1335,11 @@ function render(){
   document.querySelectorAll('.nav-item').forEach(el=>{
     el.classList.toggle('active', el.dataset.page===currentPage);
   });
+  const showBack = currentPage !== 'dashboard';
+  const mBack = document.getElementById('mobileBackBtn');
+  if(mBack) mBack.classList.toggle('show', showBack);
+  const dBack = document.getElementById('desktopBackBtn');
+  if(dBack) dBack.classList.toggle('show', showBack);
   if(currentPage !== _lastHistoryPage){
     const hash = '#'+currentPage;
     if(location.hash !== hash){
@@ -4771,7 +4813,16 @@ function renderCostingView(id){const c=DB.costings.find(x=>x.id===id);if(!c)retu
 function printCosting(id){const c=DB.costings.find(x=>x.id===id);if(!c)return;const w=window.open('','_blank');w.document.write(`<html><head><title>Costing - ${escapeHTML(c.styleName)}</title><style>body{font-family:Arial;padding:30px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:left}.total{font-weight:bold}</style></head><body>${document.getElementById('costingPrintArea').innerHTML}</body></html>`);w.document.close();w.print();}
 
 /* ============================= VENDORS & RATES ============================= */
-function renderVendors(){return `<div class="page-header"><div><h1 class="page-title">Vendors & Suppliers</h1><p class="page-sub">Material suppliers, dyers, printers and service providers with their rates</p></div><div style="display:flex;gap:8px"><button class="btn btn-ghost" onclick="navigate('ratecompare')">🔍 Compare Rates</button><button class="btn btn-primary" onclick="openVendorModal()">+ Add Vendor</button></div></div><div class="grid">${DB.vendors.map(v=>`<div class="card"><div class="card-body"><div class="tag-row"><span class="tag">${escapeHTML(v.type||'Material Supplier')}</span></div><h3 class="card-title">${escapeHTML(v.name)}</h3><div style="font-size:12px;color:var(--slate);margin-bottom:8px">${escapeHTML(v.contactPerson||'')}${v.phone?' · '+escapeHTML(v.phone):''}</div><div style="font-size:12px;margin-bottom:10px"><b>${(v.materials||[]).length}</b> materials · <b>${(v.services||[]).length}</b> services</div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="viewVendor('${jsAttr(v.id)}')">View Rates</button><button class="btn btn-ghost btn-sm" onclick="openVendorModal('${jsAttr(v.id)}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteVendor('${jsAttr(v.id)}')">Delete</button></div></div></div>`).join('')}</div>${!DB.vendors.length?'<div class="empty-state"><div class="big">◉</div>No vendors yet. Add fabric, trim and processing suppliers.</div>':''}`;}
+let _vendorFilter = window._vendorFilter || 'All';
+function setVendorFilter(val){ window._vendorFilter = val; _vendorFilter = val; render(); }
+function renderVendors(){
+  const filter = window._vendorFilter || 'All';
+  const filterOptions = ['All','Material Supplier','Service Provider','Both'];
+  const filtered = DB.vendors.filter(v=>{
+    if(filter==='All') return true;
+    return (v.type||'Material Supplier')===filter;
+  });
+  return `<div class="page-header"><div><h1 class="page-title">Vendors & Suppliers</h1><p class="page-sub">Material suppliers, dyers, printers and service providers with their rates</p></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select onchange="setVendorFilter(this.value)" style="padding:8px 10px;border-radius:8px;border:1px solid var(--line)">${filterOptions.map(o=>`<option value="${o}" ${filter===o?'selected':''}>${o==='All'?'All Vendors':o}</option>`).join('')}</select><button class="btn btn-ghost" onclick="navigate('ratecompare')">🔍 Compare Rates</button><button class="btn btn-primary" onclick="openVendorModal()">+ Add Vendor</button></div></div><div class="grid">${filtered.map(v=>`<div class="card"><div class="card-body"><div class="tag-row"><span class="tag">${escapeHTML(v.type||'Material Supplier')}</span></div><h3 class="card-title">${escapeHTML(v.name)}</h3><div style="font-size:12px;color:var(--slate);margin-bottom:8px">${escapeHTML(v.contactPerson||'')}${v.phone?' · '+escapeHTML(v.phone):''}</div><div style="font-size:12px;margin-bottom:10px"><b>${(v.materials||[]).length}</b> materials · <b>${(v.services||[]).length}</b> services</div><div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="viewVendor('${jsAttr(v.id)}')">View Rates</button><button class="btn btn-ghost btn-sm" onclick="openVendorModal('${jsAttr(v.id)}')">Edit</button><button class="btn btn-danger btn-sm" onclick="deleteVendor('${jsAttr(v.id)}')">Delete</button></div></div></div>`).join('')}</div>${!filtered.length?`<div class="empty-state"><div class="big">◉</div>${DB.vendors.length? 'No vendors match this filter.' : 'No vendors yet. Add fabric, trim and processing suppliers.'}</div>`:''}`;}
 function openVendorModal(id){const v=id?DB.vendors.find(x=>x.id===id):{id:null,name:'',type:'Material Supplier',contactPerson:'',phone:'',email:'',address:'',gst:'',paymentTerms:'',leadTime:'',notes:'',materials:[],services:[]};if(id && !v){ alert('This vendor could not be found (it may have been renamed or removed). Please refresh the page and try again.'); return; }window._vendorEdit=JSON.parse(JSON.stringify(v));renderVendorModal();}
 function renderVendorModal(){const v=window._vendorEdit;showModal(`<h2>${v.id?'Edit':'Add'} Vendor</h2><div class="field-row"><div class="field"><label>Vendor Name</label><input id="vm_name" value="${escapeHTML(v.name)}"></div><div class="field"><label>Type</label><select id="vm_type"><option ${v.type==='Material Supplier'?'selected':''}>Material Supplier</option><option ${v.type==='Service Provider'?'selected':''}>Service Provider</option><option ${v.type==='Both'?'selected':''}>Both</option></select></div></div><div class="field-row"><div class="field"><label>Contact Person</label><input id="vm_contact" value="${escapeHTML(v.contactPerson||'')}"></div><div class="field"><label>Phone / WhatsApp</label><input id="vm_phone" value="${escapeHTML(v.phone||'')}"></div></div><div class="field-row"><div class="field"><label>Email</label><input id="vm_email" value="${escapeHTML(v.email||'')}"></div><div class="field"><label>GST</label><input id="vm_gst" value="${escapeHTML(v.gst||'')}"></div></div><div class="field"><label>Address</label><textarea id="vm_address">${escapeHTML(v.address||'')}</textarea></div><div class="field-row"><div class="field"><label>Payment Terms</label><input id="vm_payment" value="${escapeHTML(v.paymentTerms||'')}" placeholder="Advance / 30 days"></div><div class="field"><label>Lead Time</label><input id="vm_lead" value="${escapeHTML(v.leadTime||'')}" placeholder="3-5 days"></div></div><div class="field"><label>Notes</label><textarea id="vm_notes">${escapeHTML(v.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorModal()">Save Vendor</button></div>`);}
 function saveVendorModal(){const v=window._vendorEdit;const isNew=!v.id;const data={...v,name:document.getElementById('vm_name').value.trim(),type:document.getElementById('vm_type').value,contactPerson:document.getElementById('vm_contact').value.trim(),phone:document.getElementById('vm_phone').value.trim(),email:document.getElementById('vm_email').value.trim(),gst:document.getElementById('vm_gst').value.trim(),address:document.getElementById('vm_address').value.trim(),paymentTerms:document.getElementById('vm_payment').value.trim(),leadTime:document.getElementById('vm_lead').value.trim(),notes:document.getElementById('vm_notes').value.trim(),materials:v.materials||[],services:v.services||[],updatedAt:Date.now()};if(!data.name){alert('Enter the vendor name.');return;}const ref=v.id?db.collection('vendors').doc(v.id):db.collection('vendors').doc();if(!v.id)data.createdAt=Date.now();ref.set(data,{merge:true}).then(()=>{closeModal(); showToast(isNew?'Vendor added.':'Vendor updated.'); if(isNew){ viewVendor(ref.id); } else { render(); } }).catch(e=>showToast('Vendor save failed: '+e.message,'error'));}
