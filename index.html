@@ -368,18 +368,17 @@ input:focus, textarea:focus, select:focus{outline:none; border-color:var(--gold)
 }
 .global-back-btn.show{display:inline-flex;}
 .global-back-btn:active{background:rgba(110,52,130,0.12);}
+.desktop-back-bar{
+  display:none; padding:16px 28px 0 28px;
+}
+.desktop-back-bar.show{display:block;}
 .desktop-back-btn{
-  display:none; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); cursor:pointer;
   color:var(--ink); font-size:13px; padding:7px 14px; border-radius:8px;
-  position:fixed; top:16px; right:24px; z-index:120; box-shadow:0 2px 8px rgba(0,0,0,0.08);
 }
-.desktop-back-btn.show{display:inline-flex;}
 .desktop-back-btn:hover{background:var(--panel-alt,#f5f3ee);}
-@media (min-width: 861px){
-  .global-back-btn{display:none !important;}
-}
 @media (max-width: 860px){
-  .desktop-back-btn{display:none !important;}
+  .desktop-back-bar{display:none !important;}
 }
 
 /* ---------- Mobile responsive ---------- */
@@ -555,7 +554,6 @@ body.dark-mode .style-img{background:#232842; color:#5B6478;}
 </head>
 <body>
 
-<button class="desktop-back-btn no-print" id="desktopBackBtn" onclick="goBack()">← Back</button>
 <div class="mobile-topbar no-print">
   <button class="global-back-btn" id="mobileBackBtn" onclick="goBack()">←</button>
   <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
@@ -616,7 +614,10 @@ body.dark-mode .style-img{background:#232842; color:#5B6478;}
   </div>
 
   <!-- MAIN -->
-  <div class="main" id="main"></div>
+  <div class="main-col" style="flex:1; min-width:0; display:flex; flex-direction:column;">
+    <div class="desktop-back-bar no-print" id="desktopBackBar"><button class="desktop-back-btn" id="desktopBackBtn" onclick="goBack()">← Back</button></div>
+    <div class="main" id="main"></div>
+  </div>
 </div>
 
 <!-- MODAL ROOT -->
@@ -1239,15 +1240,31 @@ function showPendingScreen(){
 
 /* ============================= ROUTER ============================= */
 const KNOWN_PAGES = ['dashboard','styles','listings','listingdetail','costing','newcosting','viewcosting','vendors','vendordetail','ratecompare','inventory','catalog','clients','clientdetail','invoices','orders','neworder','newinvoice','viewinvoice','challans','newchallan','viewchallan','purchaseorders','newpurchaseorder','viewpurchaseorder','settings','team','activitylog','links','pettycash','search','suggestions'];
-let currentPage = (function(){
-  const h = (location.hash||'').replace('#','');
-  return KNOWN_PAGES.includes(h) ? h : 'dashboard';
-})();
+/* Pages that show one specific record and need that record's id to survive a page refresh
+   or a re-opened tab. Without this, the hash was just "#vendordetail" with no id, so reloading
+   (or switching back to an old tab) lost the in-memory id and showed "Vendor not found". */
+const DETAIL_ID_PAGES = {
+  vendordetail: '_viewingVendorId',
+  listingdetail: '_viewingListingId',
+  viewcosting: '_viewingCostingId',
+  clientdetail: '_viewingClientId',
+  viewinvoice: '_viewingInvoiceId'
+};
+function parseHash(){
+  const raw = (location.hash||'').replace('#','');
+  const slash = raw.indexOf('/');
+  const page = slash===-1 ? raw : raw.slice(0, slash);
+  const id = slash===-1 ? null : decodeURIComponent(raw.slice(slash+1));
+  if(!KNOWN_PAGES.includes(page)) return {page:'dashboard', id:null};
+  if(DETAIL_ID_PAGES[page] && id){ window[DETAIL_ID_PAGES[page]] = id; }
+  return {page, id};
+}
+let currentPage = parseHash().page;
 let _lastHistoryPage = null;
 let navHistory = [];
 window.addEventListener('popstate', function(){
-  const h = (location.hash||'').replace('#','');
-  currentPage = KNOWN_PAGES.includes(h) ? h : 'dashboard';
+  const parsed = parseHash();
+  currentPage = parsed.page;
   _lastHistoryPage = currentPage;
   if(navHistory.length) navHistory.pop();
   render();
@@ -1338,10 +1355,11 @@ function render(){
   const showBack = currentPage !== 'dashboard';
   const mBack = document.getElementById('mobileBackBtn');
   if(mBack) mBack.classList.toggle('show', showBack);
-  const dBack = document.getElementById('desktopBackBtn');
+  const dBack = document.getElementById('desktopBackBar');
   if(dBack) dBack.classList.toggle('show', showBack);
-  if(currentPage !== _lastHistoryPage){
-    const hash = '#'+currentPage;
+  {
+    const idKey = DETAIL_ID_PAGES[currentPage];
+    const hash = '#'+currentPage + (idKey && window[idKey] ? '/'+encodeURIComponent(window[idKey]) : '');
     if(location.hash !== hash){
       try{ history.pushState({page:currentPage}, '', hash); }catch(e){}
     }
@@ -4721,7 +4739,7 @@ function renderSearchResults(results){
         <h3>Clients (${grouped.client.length})</h3>
         <div style="display:grid; gap:10px;">
           ${grouped.client.map(r=>`
-            <div class="card" style="cursor:pointer;" onclick="navigate('clientdetail'); window._viewingClientId='${r.id}'; render();">
+            <div class="card" style="cursor:pointer;" onclick="window._viewingClientId='${r.id}'; navigate('clientdetail');">
               <div class="card-body">
                 <div class="card-title">${escapeHTML(r.name)}</div>
                 <div class="card-desc">${r.item.phone||'No phone'}</div>
