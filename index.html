@@ -786,6 +786,50 @@ body:not(.dark-mode) .mobile-topbar{box-shadow:0 1px 12px rgba(16,24,40,.08);}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+<!-- Diagnostic / Watchdog: shows a plain-English, on-screen message (instead of
+     hanging forever on the spinner) if Firebase's scripts fail to load, or if
+     ANY uncaught error happens while the loading screen is still showing.
+     This makes the page self-diagnosing without needing browser DevTools. -->
+<script>
+function showStuckDiagnostic(reasonText, isGeneric){
+  var ls = document.getElementById('loadingScreen');
+  if(!ls) return;
+  // Don't overwrite a message that's already showing with a less useful generic one
+  if(isGeneric && ls.getAttribute('data-diag-shown')) return;
+  ls.setAttribute('data-diag-shown', '1');
+  ls.style.display = 'flex';
+  ls.innerHTML = '<div style="max-width:460px;text-align:center;padding:28px;font-family:Inter,sans-serif;">' +
+    '<div style="font-size:34px;margin-bottom:10px;">&#9888;&#65039;</div>' +
+    '<h2 style="margin:0 0 10px;color:#B14A3C;">Something went wrong loading the app</h2>' +
+    '<p style="font-size:13px;color:#94A3B8;line-height:1.6;margin:0 0 12px;">Try: reload this page, switch network (mobile data / different WiFi), or turn off any ad-blocker/VPN.</p>' +
+    '<div style="text-align:left;background:#F1F5F9;border-radius:8px;padding:10px 12px;font-family:monospace;font-size:11.5px;color:#334155;word-break:break-word;">' + (reasonText||'Unknown error') + '</div>' +
+    '<button onclick="location.reload()" style="margin-top:16px;padding:8px 18px;border:none;border-radius:6px;background:#E8592E;color:#fff;font-weight:600;font-size:13px;cursor:pointer;">Reload Page</button>' +
+    '</div>';
+}
+window.addEventListener('error', function(ev){
+  var ls = document.getElementById('loadingScreen');
+  if(ls && ls.style.display !== 'none'){
+    showStuckDiagnostic('Error: ' + (ev.message||'unknown') + (ev.filename?(' (line '+ev.lineno+')'):''));
+  }
+}, true);
+(function(){
+  // If Firebase's SDK scripts (from gstatic.com) never load, say so after 20s.
+  setTimeout(function(){
+    if(typeof firebase === 'undefined'){
+      showStuckDiagnostic('Firebase scripts from gstatic.com never finished loading after 20 seconds. Your network is likely blocking or heavily throttling connections to Google\'s servers.');
+    }
+  }, 20000);
+  // Fallback: if we're STILL stuck on the loading screen after 40s with no
+  // specific error caught above, show a generic message so it's never silent.
+  setTimeout(function(){
+    var ls = document.getElementById('loadingScreen');
+    if(ls && ls.style.display !== 'none' && !ls.getAttribute('data-diag-shown')){
+      showStuckDiagnostic('Stuck on the loading screen for 40+ seconds with no specific error caught. Firebase loaded: ' + (typeof firebase!=='undefined') + '. This is likely a slow/unstable connection to Google\'s servers.', true);
+    }
+  }, 40000);
+})();
+</script>
+
 <script>
 /* =====================================================================
    FIREBASE CONFIG — PASTE YOUR OWN PROJECT'S CONFIG HERE
@@ -805,11 +849,16 @@ function isFirebaseConfigured(){
 }
 
 let firebaseApp, auth, db, functionsApi;
-if(isFirebaseConfigured()){
-  firebaseApp = firebase.initializeApp(firebaseConfig);
-  auth = firebase.auth();
-  db = firebase.firestore();
-  functionsApi = firebase.functions();
+try{
+  if(isFirebaseConfigured()){
+    firebaseApp = firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+    functionsApi = firebase.functions();
+  }
+}catch(fbInitErr){
+  console.error('Firebase failed to initialize:', fbInitErr);
+  showStuckDiagnostic('Firebase failed to initialize: ' + (fbInitErr && fbInitErr.message));
 }
 
 /* ============================= HELPERS ============================= */
@@ -1380,36 +1429,48 @@ function signOutUser(){
   auth.signOut();
 }
 
-if(!isFirebaseConfigured()){
-  showSetupScreen();
+if(!isFirebaseConfigured() || !auth){
+  if(isFirebaseConfigured() && !auth){
+    // Firebase config looked fine but the SDK itself never loaded (see diagnostic message above) — do nothing further, the message is already showing.
+  } else {
+    showSetupScreen();
+  }
 }else{
   auth.onAuthStateChanged(user=>{
-    if(user){
-      currentUserRole = 'admin';  // Reset to admin for Firebase auth
-      currentTailorId = null;
-      currentUser = user;
-      appRoleReady = false;
-      document.getElementById('loginScreen').style.display='none';
-      document.getElementById('pendingScreen').style.display='none';
-      document.getElementById('loadingScreen').style.display='flex';
-      refreshAppRole().then(()=>{
-        if(!appRole) checkPendingOrBootstrap();
-      });
-      startAccessWatchdog();
-    }else{
-      currentUser = null;
-      appRole = null;
-      appRoleReady = false;
-      stopAccessWatchdog();
-      document.getElementById('pendingScreen').style.display='none';
-      if(currentUserRole==='tailor'){
-        showLoginScreen();  // Show login for tailor signout
+    try{
+      if(user){
+        currentUserRole = 'admin';  // Reset to admin for Firebase auth
+        currentTailorId = null;
+        currentUser = user;
+        appRoleReady = false;
+        document.getElementById('loginScreen').style.display='none';
+        document.getElementById('pendingScreen').style.display='none';
+        document.getElementById('loadingScreen').style.display='flex';
+        refreshAppRole().then(()=>{
+          if(!appRole) checkPendingOrBootstrap();
+        }).catch(function(e){ showStuckDiagnostic('refreshAppRole failed: ' + (e && e.message)); });
+        startAccessWatchdog();
       }else{
-        detachListeners();
-        document.getElementById('appRoot').style.display='none';
-        showLoginScreen();
+        currentUser = null;
+        appRole = null;
+        appRoleReady = false;
+        stopAccessWatchdog();
+        document.getElementById('pendingScreen').style.display='none';
+        if(currentUserRole==='tailor'){
+          showLoginScreen();  // Show login for tailor signout
+        }else{
+          detachListeners();
+          document.getElementById('appRoot').style.display='none';
+          showLoginScreen();
+        }
       }
+    }catch(authCbErr){
+      console.error('onAuthStateChanged handler error:', authCbErr);
+      showStuckDiagnostic('App error while checking login: ' + (authCbErr && authCbErr.message));
     }
+  }, function(authErr){
+    console.error('onAuthStateChanged itself errored:', authErr);
+    showStuckDiagnostic('Firebase Auth error: ' + (authErr && authErr.message));
   });
 }
 
