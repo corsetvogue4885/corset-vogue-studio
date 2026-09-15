@@ -550,9 +550,151 @@ body.dark-mode .tag{background:#2A3158; color:var(--ink);}
 body.dark-mode .btn-ghost{color:var(--ink); border-color:var(--line);}
 body.dark-mode .empty-state{color:var(--slate);}
 body.dark-mode .style-img{background:#232842; color:#5B6478;}
+
+/* ============================================================
+   CORSET VOGUE — PREMIUM LIGHT APPLE UI
+   Visual-only override: preserves existing markup, functions and data.
+   ============================================================ */
+:root{
+  --cv-bg:#F6F7FB;
+  --cv-surface:rgba(255,255,255,.88);
+  --cv-surface-solid:#FFFFFF;
+  --cv-text:#172033;
+  --cv-muted:#667085;
+  --cv-line:#E6E8EF;
+  --cv-purple:#6D3FD1;
+  --cv-purple-dark:#5630AD;
+  --cv-purple-soft:#F0EBFF;
+  --cv-gold:#C9952E;
+  --cv-shadow:0 8px 28px rgba(25,31,48,.07);
+}
+body:not(.dark-mode){background:var(--cv-bg);color:var(--cv-text);}
+body:not(.dark-mode) .app{background:var(--cv-bg);}
+body:not(.dark-mode) .main{background:linear-gradient(180deg,#F8F9FC 0%,#F4F5F9 100%);}
+body:not(.dark-mode) .page-title,body:not(.dark-mode) .panel h3,body:not(.dark-mode) .field label{color:var(--cv-text);}
+body:not(.dark-mode) .page-sub,body:not(.dark-mode) .card-desc{color:var(--cv-muted);}
+body:not(.dark-mode) .panel,body:not(.dark-mode) .card{
+  background:var(--cv-surface);border:1px solid rgba(255,255,255,.9);box-shadow:var(--cv-shadow);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+body:not(.dark-mode) .panel:hover,body:not(.dark-mode) .card:hover{box-shadow:0 12px 34px rgba(25,31,48,.10);}
+body:not(.dark-mode) input[type=text],body:not(.dark-mode) input[type=number],body:not(.dark-mode) input[type=tel],
+body:not(.dark-mode) input[type=date],body:not(.dark-mode) input[type=email],body:not(.dark-mode) input[type=password],
+body:not(.dark-mode) input[type=url],body:not(.dark-mode) textarea,body:not(.dark-mode) select{
+  background:#FFF;color:#172033;border:1px solid #D9DDE7;box-shadow:0 1px 2px rgba(16,24,40,.03);
+}
+body:not(.dark-mode) input:focus,body:not(.dark-mode) textarea:focus,body:not(.dark-mode) select:focus{
+  border-color:#8D6BD9;box-shadow:0 0 0 3px rgba(109,63,209,.12);outline:none;
+}
+body:not(.dark-mode) table{background:#FFF;border:1px solid var(--cv-line);border-radius:12px;overflow:hidden;}
+body:not(.dark-mode) th{background:#F5F3FA;color:#4B5565;border-bottom:1px solid #E3E5EC;}
+body:not(.dark-mode) td{color:#283244;border-bottom:1px solid #EEF0F4;}
+body:not(.dark-mode) tbody tr:hover{background:#FAF9FE;}
+body:not(.dark-mode) .btn-primary{background:var(--cv-purple);border-color:var(--cv-purple);color:#fff;box-shadow:0 4px 12px rgba(109,63,209,.20);}
+body:not(.dark-mode) .btn-primary:hover{background:var(--cv-purple-dark);border-color:var(--cv-purple-dark);transform:translateY(-1px);}
+body:not(.dark-mode) .btn-ghost{background:#FFF;color:#3F4757;border:1px solid #DDE1E9;}
+body:not(.dark-mode) .btn-ghost:hover{background:var(--cv-purple-soft);border-color:#CFC1F3;color:var(--cv-purple-dark);}
+body:not(.dark-mode) .tag{background:var(--cv-purple-soft);color:var(--cv-purple-dark);}
+body:not(.dark-mode) .summary-row.total{border-top-color:#D8DCE5;color:var(--cv-text);}
+body:not(.dark-mode) .grid .card .page-title{color:var(--cv-text);}
+body:not(.dark-mode) .sidebar{box-shadow:8px 0 30px rgba(20,24,38,.12);}
+body:not(.dark-mode) .nav-item.active{box-shadow:inset 3px 0 0 #BCA5F1;}
+body:not(.dark-mode) .nav-icon-chip{background:rgba(255,255,255,.10);}
+body:not(.dark-mode) .nav-item.active .nav-icon-chip{background:#E9E0FF;}
+body:not(.dark-mode) .nav-item.active .nav-icon-chip i{color:#5B32B7;}
+body:not(.dark-mode) .modal{background:rgba(255,255,255,.96);border:1px solid #E4E6ED;box-shadow:0 24px 70px rgba(16,24,40,.20);}
+body:not(.dark-mode) .modal h2{color:var(--cv-text);}
+body:not(.dark-mode) .modal p{color:var(--cv-muted);}
+body:not(.dark-mode) .mobile-topbar{box-shadow:0 1px 12px rgba(16,24,40,.08);}
+@media(max-width:860px){
+ body:not(.dark-mode) .main{padding-top:18px;}
+ body:not(.dark-mode) .panel,body:not(.dark-mode) .card{box-shadow:0 5px 20px rgba(25,31,48,.06);}
+}
 </style>
+<style>
+/* ===== Corset Vogue cinematic wordmark intro ===== */
+#cvIntro{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#090909;color:#fff;overflow:hidden;transition:opacity .7s cubic-bezier(.22,1,.36,1),visibility .7s;}
+#cvIntro.is-done{opacity:0;visibility:hidden;pointer-events:none}
+#cvIntro .cv-noise{position:absolute;inset:-50%;opacity:.055;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:cvNoise .22s steps(2) infinite;}
+#cvIntro .cv-orb{position:absolute;width:42vw;height:42vw;max-width:620px;max-height:620px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.09),rgba(255,255,255,0) 68%);filter:blur(20px);animation:cvOrb 3.2s ease-in-out infinite alternate;}
+#cvIntro .cv-wordmark{position:relative;text-align:center;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.02em;font-weight:600;line-height:1.05;}
+#cvIntro .cv-main{font-size:clamp(42px,7.2vw,104px);display:flex;justify-content:center;align-items:center;white-space:nowrap;overflow:visible;padding:0 .08em;}
+#cvIntro .cv-letter{display:inline-block;opacity:0;transform:translate3d(var(--x),var(--y),0) rotate(var(--r)) scale(.55);filter:blur(8px);animation:cvLetter 1.15s cubic-bezier(.16,1,.3,1) forwards;animation-delay:calc(var(--i)*.075s + .12s);}
+#cvIntro .cv-sub{margin-top:22px;font-size:clamp(11px,1.3vw,16px);letter-spacing:.48em;text-transform:uppercase;font-weight:500;color:rgba(255,255,255,.58);opacity:0;transform:translateY(14px);animation:cvSub .9s .95s cubic-bezier(.22,1,.36,1) forwards;}
+#cvIntro .cv-line{width:min(180px,30vw);height:1px;background:rgba(255,255,255,.34);margin:25px auto 0;transform:scaleX(0);transform-origin:center;animation:cvLine .9s 1.1s cubic-bezier(.22,1,.36,1) forwards;}
+#cvIntro .cv-corner{position:absolute;inset:28px;pointer-events:none;}
+#cvIntro .cv-corner:before,#cvIntro .cv-corner:after{content:"";position:absolute;width:34px;height:34px;border-color:rgba(255,255,255,.16);border-style:solid;}
+#cvIntro .cv-corner:before{left:0;top:0;border-width:1px 0 0 1px}#cvIntro .cv-corner:after{right:0;bottom:0;border-width:0 1px 1px 0}
+@keyframes cvLetter{0%{opacity:0;transform:translate3d(var(--x),var(--y),0) rotate(var(--r)) scale(.72);filter:blur(8px)}48%{opacity:1;filter:blur(1px)}100%{opacity:1;transform:translate3d(0,0,0) rotate(0) scale(1);filter:blur(0)}}
+@keyframes cvSub{to{opacity:1;transform:none}}@keyframes cvLine{to{transform:scaleX(1)}}@keyframes cvNoise{0%{transform:translate(0,0)}25%{transform:translate(2%,-1%)}50%{transform:translate(-1%,2%)}75%{transform:translate(1%,1%)}100%{transform:translate(-2%,-1%)}}@keyframes cvOrb{to{transform:scale(1.12);opacity:.7}}
+@media(prefers-reduced-motion:reduce){#cvIntro .cv-letter{animation:none;opacity:1;transform:none;filter:none}#cvIntro .cv-sub{animation:none;opacity:1;transform:none}#cvIntro .cv-line{animation:none;transform:none}}
+
+/* Premium studio-data loading state — visual only; app logic remains unchanged. */
+#loadingScreen{position:fixed;inset:0;z-index:2147483000;display:flex!important;align-items:center;justify-content:center;background:rgba(247,247,250,.94);backdrop-filter:blur(22px) saturate(125%);-webkit-backdrop-filter:blur(22px) saturate(125%);color:#171723;transition:opacity .45s ease,visibility .45s ease;}
+#loadingScreen[style*="display: none"]{display:none!important;}
+.cv-loading-shell{position:relative;width:min(430px,calc(100vw - 42px));padding:42px 34px 34px;text-align:center;border:1px solid rgba(255,255,255,.9);border-radius:28px;background:rgba(255,255,255,.68);box-shadow:0 28px 80px rgba(24,22,45,.12),inset 0 1px 0 rgba(255,255,255,.95);overflow:hidden;animation:cvLoadIn .7s cubic-bezier(.22,1,.36,1) both;}
+.cv-loading-aura{position:absolute;width:230px;height:230px;left:50%;top:-130px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(126,96,180,.18),rgba(126,96,180,0) 68%);filter:blur(5px);animation:cvLoadAura 2.8s ease-in-out infinite;}
+.cv-loading-mark{position:relative;width:76px;height:76px;margin:0 auto 24px;display:grid;place-items:center;}
+.cv-loading-ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(98,78,145,.18);border-top-color:rgba(98,78,145,.85);border-right-color:rgba(98,78,145,.42);animation:cvLoadSpin 1.15s linear infinite;}
+.cv-loading-ring:after{content:"";position:absolute;inset:7px;border-radius:50%;border:1px dashed rgba(98,78,145,.18);animation:cvLoadSpinReverse 2.8s linear infinite;}
+.cv-loading-core{width:31px;height:31px;border-radius:10px;transform:rotate(45deg);background:linear-gradient(145deg,#171723,#75609a);box-shadow:0 8px 24px rgba(98,78,145,.22);animation:cvLoadPulse 1.7s ease-in-out infinite;}
+.cv-loading-kicker{position:relative;font-size:10px;line-height:1;letter-spacing:.32em;font-weight:700;color:#78688f;margin-left:.32em;margin-bottom:12px;}
+.cv-loading-title{position:relative;font-size:clamp(24px,5vw,31px);line-height:1.15;letter-spacing:-.035em;font-weight:600;color:#191923;}
+.cv-loading-status{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;margin-top:14px;font-size:12px;letter-spacing:.01em;color:#777582;}
+.cv-loading-status i{width:3px;height:3px;border-radius:50%;background:#8b7aa5;animation:cvLoadDots 1.2s ease-in-out infinite;}
+.cv-loading-status i:nth-child(2){animation-delay:.16s}.cv-loading-status i:nth-child(3){animation-delay:.32s}.cv-loading-status i:nth-child(4){animation-delay:.48s}
+.cv-loading-progress{position:relative;width:100%;height:3px;margin-top:27px;border-radius:99px;background:rgba(34,31,45,.07);overflow:hidden;}
+.cv-loading-progress span{display:block;width:42%;height:100%;border-radius:inherit;background:linear-gradient(90deg,rgba(98,78,145,0),rgba(98,78,145,.8),rgba(98,78,145,0));animation:cvLoadProgress 1.65s cubic-bezier(.45,0,.35,1) infinite;}
+@keyframes cvLoadIn{from{opacity:0;transform:translateY(16px) scale(.975)}to{opacity:1;transform:none}}
+@keyframes cvLoadSpin{to{transform:rotate(360deg)}}
+@keyframes cvLoadSpinReverse{to{transform:rotate(-360deg)}}
+@keyframes cvLoadPulse{0%,100%{transform:rotate(45deg) scale(.88);opacity:.75}50%{transform:rotate(45deg) scale(1);opacity:1}}
+@keyframes cvLoadDots{0%,70%,100%{transform:translateY(0);opacity:.35}35%{transform:translateY(-3px);opacity:1}}
+@keyframes cvLoadProgress{0%{transform:translateX(-130%)}100%{transform:translateX(340%)}}
+@keyframes cvLoadAura{0%,100%{opacity:.65;transform:translateX(-50%) scale(.9)}50%{opacity:1;transform:translateX(-50%) scale(1.08)}}
+@media(max-width:480px){.cv-loading-shell{padding:36px 24px 28px;border-radius:24px}.cv-loading-mark{width:68px;height:68px;margin-bottom:21px}.cv-loading-title{font-size:25px}.cv-loading-status{font-size:11px}.cv-loading-progress{margin-top:24px}}
+@media(prefers-reduced-motion:reduce){.cv-loading-shell,.cv-loading-ring,.cv-loading-ring:after,.cv-loading-core,.cv-loading-status i,.cv-loading-progress span,.cv-loading-aura{animation:none!important}.cv-loading-progress span{margin-left:29%}}
+</style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2140">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Corset Vogue">
+<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
+
+<div id="cvIntro" aria-label="Corset Vogue Studio">
+  <div class="cv-noise"></div><div class="cv-orb"></div><div class="cv-corner"></div>
+  <div class="cv-wordmark">
+    <div class="cv-main" id="cvIntroMain"></div>
+    <div class="cv-sub">Studio Management</div>
+    <div class="cv-line"></div>
+  </div>
+</div>
+<script>
+(function(){
+  const intro=document.getElementById('cvIntro'), main=document.getElementById('cvIntroMain');
+  if(!intro||!main)return;
+  const text='Corset Vogue';
+  [...text].forEach((ch,i)=>{
+    const el=document.createElement('span');
+    el.className='cv-letter';
+    el.textContent=ch===' '? ' ':ch;
+    const side=i%2===0?-1:1;
+    el.style.setProperty('--i',i);
+    el.style.setProperty('--x',(side*(34+(i%4)*10))+'px');
+    el.style.setProperty('--y',((i%3)-1)*26+'px');
+    el.style.setProperty('--r',(side*(i%3===0?8:4))+'deg');
+    main.appendChild(el);
+  });
+  const finish=()=>{if(intro.classList.contains('is-done'))return;intro.classList.add('is-done');setTimeout(()=>intro.remove(),800)};
+  window.addEventListener('load',()=>setTimeout(finish,3000),{once:true});
+  setTimeout(finish,4800);
+})();
+</script>
+
 
 <div class="mobile-topbar no-print">
   <button class="global-back-btn" id="mobileBackBtn" onclick="goBack()">←</button>
@@ -566,9 +708,16 @@ body.dark-mode .style-img{background:#232842; color:#5B6478;}
 <div class="center-screen no-print" id="loginScreen" style="display:none;"></div>
 <div class="center-screen no-print" id="pendingScreen" style="display:none;"></div>
 <div class="center-screen no-print" id="loadingScreen" style="display:none;">
-  <div style="text-align:center; color:#EDEBE3;">
-    <div class="spinner"></div>
-    Loading your studio data...
+  <div class="cv-loading-shell" aria-live="polite">
+    <div class="cv-loading-aura"></div>
+    <div class="cv-loading-mark" aria-hidden="true">
+      <span class="cv-loading-ring"></span>
+      <span class="cv-loading-core"></span>
+    </div>
+    <div class="cv-loading-kicker">CORSET VOGUE</div>
+    <div class="cv-loading-title">Preparing your studio</div>
+    <div class="cv-loading-status"><span>Loading your studio data</span><i></i><i></i><i></i></div>
+    <div class="cv-loading-progress"><span></span></div>
   </div>
 </div>
 
@@ -596,6 +745,7 @@ body.dark-mode .style-img{background:#232842; color:#5B6478;}
     <div class="nav-item hide-for-runner" data-page="links"><span class="nav-icon-chip"><i class="ti ti-link"></i></span><span class="nav-label">Links</span></div>
     <div class="nav-item" data-page="pettycash"><span class="nav-icon-chip"><i class="ti ti-cash"></i></span><span class="nav-label">Petty Cash</span></div>
     <div class="nav-item" data-page="suggestions"><span class="nav-icon-chip"><i class="ti ti-message-2"></i></span><span class="nav-label">Suggestions</span></div>
+    <div class="nav-item" data-page="chat"><span class="nav-icon-chip"><i class="ti ti-messages"></i></span><span class="nav-label">Team Chat <span id="chatUnreadBadge"></span></span></div>
     <div class="nav-item admin-only-nav" data-page="settings"><span class="nav-icon-chip"><i class="ti ti-settings"></i></span><span class="nav-label">Settings</span></div>
     <div class="nav-item admin-only-nav" data-page="team"><span class="nav-icon-chip"><i class="ti ti-users-group"></i></span><span class="nav-label">Team <span id="teamPendingBadge"></span></span></div>
     <div class="nav-item admin-only-nav" data-page="activitylog"><span class="nav-icon-chip"><i class="ti ti-history"></i></span><span class="nav-label">Activity Log</span></div>
@@ -742,13 +892,106 @@ const STAFF_CONFIGURABLE_PAGES = [
   {key:'invoices', label:'Invoices'},
   {key:'challans', label:'Challans'},
   {key:'purchaseorders', label:'Purchase Orders'},
-  {key:'links', label:'Links'}
+  {key:'links', label:'Links'},
+  {key:'chat', label:'Team Chat'}
 ];
 function staffCanSeePage(page){
   const access = DB.settings.staffPageAccess;
   if(!access) return true;
   return access[page] !== false;
 }
+
+/* ---- Custom Team Categories (e.g. Pattern Master, Cutting Master, Finishing):
+   Every account with the 'master' Firebase role belongs to exactly one Category.
+   Each Category has its OWN page-access list, fully editable from Settings —
+   Admin can rename, add or delete Categories anytime WITHOUT touching any code,
+   so new job roles (e.g. a future "Sampling" team) can be added later just by
+   creating a new Category in Settings. ---- */
+const CUSTOM_ROLE_PAGES = [
+  {key:'styles', label:'Styles'},
+  {key:'listings', label:'Listing Manager'},
+  {key:'costing', label:'Costing'},
+  {key:'vendors', label:'Vendors & Rates'},
+  {key:'inventory', label:'Stock'},
+  {key:'catalog', label:'Catalog'},
+  {key:'clients', label:'Clients'},
+  {key:'orders', label:'Orders'},
+  {key:'invoices', label:'Invoices'},
+  {key:'challans', label:'Challans'},
+  {key:'purchaseorders', label:'Purchase Orders'},
+  {key:'links', label:'Links'},
+  {key:'pettycash', label:'Petty Cash'},
+  {key:'suggestions', label:'Suggestions'},
+  {key:'chat', label:'Team Chat'},
+  {key:'settings', label:'Settings'},
+  {key:'team', label:'Team'},
+  {key:'activitylog', label:'Activity Log'}
+];
+// kept as an alias so earlier gating code (navigate/render) keeps working unchanged
+const MASTER_CONFIGURABLE_PAGES = CUSTOM_ROLE_PAGES;
+function defaultCustomCategories(){
+  return [
+    {id:'patternmaster', name:'Pattern Master', pages:{}},
+    {id:'cuttingmaster', name:'Cutting Master', pages:{}},
+    {id:'finishing', name:'Finishing', pages:{}}
+  ];
+}
+function getCustomCategories(){
+  return (DB.settings.customCategories && DB.settings.customCategories.length) ? DB.settings.customCategories : defaultCustomCategories();
+}
+function categoryById(id){
+  return getCustomCategories().find(c=>c.id===id) || null;
+}
+function myCategoryId(){
+  const myProfile = (DB.users||[]).find(u=>u.id===(currentUser&&currentUser.uid));
+  return myProfile ? myProfile.category : null;
+}
+function myCategory(){
+  return categoryById(myCategoryId());
+}
+function masterCanSeePage(page){
+  const cat = myCategory();
+  if(!cat) return false; // No category assigned yet = no access until Admin assigns one
+  return cat.pages && cat.pages[page] === true;
+}
+function isMaster(){ return appRole === 'master'; }
+function roleDisplayName(role, categoryId){
+  if(role==='master'){
+    const cat = categoryById(categoryId);
+    return cat ? cat.name : 'Team Member';
+  }
+  if(!role) return '';
+  return role.charAt(0).toUpperCase()+role.slice(1);
+}
+function slugifyCategoryName(name){
+  let base = (name||'').toLowerCase().replace(/[^a-z0-9]+/g,'') || 'category';
+  let id = base, n = 2;
+  const existing = getCustomCategories().map(c=>c.id);
+  while(existing.includes(id)){ id = base + n; n++; }
+  return id;
+}
+
+/* ---- Team Chat: role-wise channels. Staff and Runner each get one channel
+   with Admin; every Category also gets its own channel with Admin. Admin can
+   switch between ALL of them; everyone else only sees their own. ---- */
+function allChatChannels(){
+  const base = [
+    {key:'admin-staff', label:'Staff', roles:['admin','staff']},
+    {key:'admin-runner', label:'Runner', roles:['admin','runner']}
+  ];
+  const catChannels = getCustomCategories().map(c=>({key:'admin-cat-'+c.id, label:c.name, roles:['admin','master'], categoryId:c.id}));
+  return base.concat(catChannels);
+}
+function chatChannelsForRole(role){
+  const all = allChatChannels();
+  if(role==='admin') return all;
+  if(role==='master'){
+    const myCat = myCategoryId();
+    return all.filter(c=>c.categoryId && c.categoryId===myCat);
+  }
+  return all.filter(c=>c.roles.includes(role));
+}
+
 
 const USA_STATES = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
 
@@ -817,7 +1060,9 @@ const defaultSettings = {
   authorisedSignatory:'',
   iecNumber:'DEVPS0640C',
   lutNumber:'',
-  lutDetails:''
+  lutDetails:'',
+  staffPageAccess:null,
+  customCategories:null
 };
 
 /* ============================= IN-MEMORY CACHE (synced from Firestore) ============================= */
@@ -840,20 +1085,21 @@ let DB = {
   suggestions: [],
   inventory: [],
   activityLog: [],
-  purchaseOrders: []
+  purchaseOrders: [],
+  chatMessages: []
 };
 let currentUser = null;
 let currentUserRole = 'admin'; // 'admin' or 'tailor' -- used by the separate tailor self-service portal, unrelated to staff roles below
 let currentTailorId = null;
 let listenersActive = false;
 let unsubscribers = [];
-let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false, users:false, links:false, pendingUsers:false, pettyCash:false, suggestions:false, inventory:false, activityLog:false, purchaseOrders:false };
+let loadedFlags = { settings:false, styles:false, clients:false, invoices:false, orders:false, tailors:false, challans:false, vendors:false, costings:false, listings:false, listingAccounts:false, users:false, links:false, pendingUsers:false, pettyCash:false, suggestions:false, inventory:false, activityLog:false, purchaseOrders:false, chatMessages:false };
 
 /* ---- Staff access control (Admin / Staff roles) ---- */
 let appRole = null;         // 'admin' | 'staff' | null (not yet known)
 let appRoleReady = false;   // becomes true once we've read the ID token claims
 const ADMIN_ONLY_PAGES = ['settings','team','activitylog'];
-const RUNNER_ALLOWED_PAGES = ['pettycash','suggestions'];
+const RUNNER_ALLOWED_PAGES = ['pettycash','suggestions','chat'];
 
 function allLoaded(){
   return loadedFlags.settings && loadedFlags.styles && loadedFlags.clients && loadedFlags.invoices && loadedFlags.orders && loadedFlags.tailors && loadedFlags.challans && loadedFlags.vendors && loadedFlags.costings && loadedFlags.listings && loadedFlags.listingAccounts && loadedFlags.users && loadedFlags.links && loadedFlags.pendingUsers && loadedFlags.pettyCash && loadedFlags.suggestions && loadedFlags.inventory && loadedFlags.activityLog && loadedFlags.purchaseOrders;
@@ -981,6 +1227,14 @@ function attachListeners(){
     afterSync();
     if(currentPage==='pettycash') render();
   }, err=>{ console.error(err); loadedFlags.pettyCash = true; afterSync(); }));
+
+  unsubscribers.push(db.collection('chatMessages').orderBy('createdAt','asc').limitToLast(300).onSnapshot(snap=>{
+    DB.chatMessages = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    loadedFlags.chatMessages = true;
+    afterSync();
+    if(currentPage==='chat'){ render(); }
+    else { updateChatUnreadBadge(); }
+  }, err=>{ console.error(err); loadedFlags.chatMessages = true; afterSync(); }));
 }
 function detachListeners(){
   unsubscribers.forEach(u=>{ try{ u(); }catch(e){} });
@@ -1239,7 +1493,7 @@ function showPendingScreen(){
 }
 
 /* ============================= ROUTER ============================= */
-const KNOWN_PAGES = ['dashboard','styles','listings','listingdetail','costing','newcosting','viewcosting','vendors','vendordetail','ratecompare','inventory','catalog','clients','clientdetail','invoices','orders','neworder','newinvoice','viewinvoice','challans','newchallan','viewchallan','purchaseorders','newpurchaseorder','viewpurchaseorder','settings','team','activitylog','links','pettycash','search','suggestions'];
+const KNOWN_PAGES = ['dashboard','styles','listings','listingdetail','costing','newcosting','viewcosting','vendors','vendordetail','ratecompare','inventory','catalog','clients','clientdetail','invoices','orders','neworder','newinvoice','viewinvoice','challans','newchallan','viewchallan','purchaseorders','newpurchaseorder','viewpurchaseorder','settings','team','activitylog','links','pettycash','search','suggestions','chat'];
 /* Pages that show one specific record and need that record's id to survive a page refresh
    or a re-opened tab. Without this, the hash was just "#vendordetail" with no id, so reloading
    (or switching back to an old tab) lost the in-memory id and showed "Vendor not found". */
@@ -1273,7 +1527,7 @@ let newInvoiceState = null;
 
 function navigate(page, opts){
   opts = opts || {};
-  if(ADMIN_ONLY_PAGES.includes(page) && appRoleReady && !isAdmin()){
+  if(ADMIN_ONLY_PAGES.includes(page) && appRoleReady && !isAdmin() && !(isMaster() && masterCanSeePage(page))){
     alert('Only Admins have access to this section.');
     return;
   }
@@ -1282,6 +1536,10 @@ function navigate(page, opts){
     return;
   }
   if(appRole === 'staff' && STAFF_CONFIGURABLE_PAGES.some(p=>p.key===page) && !staffCanSeePage(page)){
+    alert('Your account does not have access to this section.');
+    return;
+  }
+  if(isMaster() && MASTER_CONFIGURABLE_PAGES.some(p=>p.key===page) && !masterCanSeePage(page)){
     alert('Your account does not have access to this section.');
     return;
   }
@@ -1379,19 +1637,30 @@ function render(){
           ${avatarHTML(displayName, myProfile && myProfile.photoUrl, 'sm')}
           <div style="min-width:0;">
             <div style="font-weight:600; font-size:12.5px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(displayName)}</div>
-            <div style="font-size:10.5px; color:rgba(255,253,254,0.7); text-transform:capitalize;">${escapeHTML(appRole||'')}</div>
+            <div style="font-size:10.5px; color:rgba(255,253,254,0.7);">${escapeHTML(roleDisplayName(appRole, myCategoryId()))}</div>
           </div>
         </div>`;
     } else {
       userEl.innerHTML = '';
     }
   }
-  document.querySelectorAll('.admin-only-nav').forEach(el=>{ el.style.display = isAdmin() ? '' : 'none'; });
+  document.querySelectorAll('.admin-only-nav').forEach(el=>{
+    const page = el.dataset.page;
+    el.style.display = (isAdmin() || (isMaster() && masterCanSeePage(page))) ? '' : 'none';
+  });
   document.querySelectorAll('.hide-for-runner').forEach(el=>{ el.style.display = (appRole==='runner') ? 'none' : ''; });
   if(appRole==='staff'){
     document.querySelectorAll('.nav-item[data-page]').forEach(el=>{
       const page = el.dataset.page;
       if(STAFF_CONFIGURABLE_PAGES.some(p=>p.key===page) && !staffCanSeePage(page)){
+        el.style.display = 'none';
+      }
+    });
+  }
+  if(isMaster()){
+    document.querySelectorAll('.nav-item[data-page]').forEach(el=>{
+      const page = el.dataset.page;
+      if(!el.classList.contains('admin-only-nav') && MASTER_CONFIGURABLE_PAGES.some(p=>p.key===page) && !masterCanSeePage(page)){
         el.style.display = 'none';
       }
     });
@@ -1402,13 +1671,16 @@ function render(){
     teamBadgeEl.textContent = pendingCount ? String(pendingCount) : '';
     teamBadgeEl.style.cssText = pendingCount ? 'background:var(--brick); color:#fff; border-radius:99px; padding:1px 6px; font-size:10.5px; margin-left:4px;' : '';
   }
-  if(ADMIN_ONLY_PAGES.includes(currentPage) && appRoleReady && !isAdmin()){
+  if(ADMIN_ONLY_PAGES.includes(currentPage) && appRoleReady && !isAdmin() && !(isMaster() && masterCanSeePage(currentPage))){
     currentPage = 'dashboard';
   }
   if(appRole === 'runner' && !RUNNER_ALLOWED_PAGES.includes(currentPage)){
     currentPage = 'pettycash';
   }
   if(appRole === 'staff' && STAFF_CONFIGURABLE_PAGES.some(p=>p.key===currentPage) && !staffCanSeePage(currentPage)){
+    currentPage = 'dashboard';
+  }
+  if(isMaster() && MASTER_CONFIGURABLE_PAGES.some(p=>p.key===currentPage) && !masterCanSeePage(currentPage)){
     currentPage = 'dashboard';
   }
   const main = document.getElementById('main');
@@ -1444,6 +1716,8 @@ function render(){
   else if(currentPage==='pettycash') main.innerHTML = renderPettyCash();
   else if(currentPage==='search') main.innerHTML = renderSearchResults(window._searchResults||[]);
   else if(currentPage==='suggestions') main.innerHTML = renderSuggestions();
+  else if(currentPage==='chat') main.innerHTML = renderChat();
+  if(currentPage==='chat') setTimeout(scrollChatToBottom, 0);
 }
 
 /* ============================= DASHBOARD ANALYTICS HELPERS ============================= */
@@ -5105,7 +5379,33 @@ function renderSettings(){
           </label>
         `).join('')}
       </div>
-      <button class="btn btn-primary btn-sm" style="margin-top:14px;" onclick="saveStaffPageAccess()">Save Staff Access</button>
+    <div class="panel" style="max-width:680px; margin-bottom:20px;">
+      <h3>Team Categories</h3>
+      <p style="font-size:13px; color:var(--slate); margin-top:-8px;">
+        Every job role beyond Admin/Staff/Runner — Pattern Master, Cutting Master, Finishing, or any category you add later (e.g. Sampling) — gets its own name and its own tick-list of pages. Assign staff to a category from the Team table below. New categories can be added anytime, no developer needed.
+      </p>
+      <div id="categoriesList">
+        ${getCustomCategories().map((cat,ci)=>`
+          <div style="border:1px solid var(--line); border-radius:8px; padding:12px; margin-top:${ci===0?'10px':'14px'};">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <input type="text" id="catname_${cat.id}" value="${escapeHTML(cat.name)}" style="font-weight:600; flex:1;">
+              <button class="btn btn-ghost btn-sm" style="color:var(--brick,#B14A3C);" onclick="deleteCategoryPrompt('${cat.id}','${escapeHTML(cat.name)}')">Delete</button>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px 16px;">
+              ${CUSTOM_ROLE_PAGES.map(p=>`
+                <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer;">
+                  <input type="checkbox" id="catpage_${cat.id}_${p.key}" ${(cat.pages&&cat.pages[p.key]===true)?'checked':''}>
+                  ${escapeHTML(p.label)}
+                </label>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn btn-ghost btn-sm" onclick="addCategoryPrompt()">+ Add Category</button>
+        <button class="btn btn-primary btn-sm" onclick="saveCategories()">Save All Categories</button>
+      </div>
     </div>
     <div class="panel" style="max-width:600px; margin-bottom:20px;">
       <h3>Business Details</h3>
@@ -5179,7 +5479,7 @@ function renderSettings(){
 
 /* ============================= TEAM / USER MANAGEMENT (Admin only) ============================= */
 function renderTeam(){
-  if(!isAdmin()){
+  if(!isAdmin() && !(isMaster() && masterCanSeePage('team'))){
     return `<div class="empty-state"><div class="big">&#128274;</div>Only Admins have access to the Team section.</div>`;
   }
   const users = DB.users || [];
@@ -5191,6 +5491,7 @@ function renderTeam(){
         <select onchange="changeUserRole('${u.id}', this.value)" ${u.id===currentUser.uid?'disabled title="You can\'t change your own role"':''}>
           <option value="staff" ${u.role==='staff'?'selected':''}>Staff</option>
           <option value="runner" ${u.role==='runner'?'selected':''}>Runner</option>
+          ${getCustomCategories().map(c=>`<option value="master:${c.id}" ${(u.role==='master'&&u.category===c.id)?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}
           <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
         </select>
       </td>
@@ -5222,6 +5523,7 @@ function renderTeam(){
                 <select id="pending_role_${p.id}">
                   <option value="staff" selected>Staff</option>
                   <option value="runner">Runner</option>
+                  ${getCustomCategories().map(c=>`<option value="master:${c.id}">${escapeHTML(c.name)}</option>`).join('')}
                   <option value="admin">Admin</option>
                 </select>
               </td>
@@ -5256,7 +5558,9 @@ function renderTeam(){
       <ul style="font-size:13px; color:var(--slate); padding-left:18px; line-height:1.7;">
         <li><b>Admin</b> can see everything, add/remove staff, and change Settings.</li>
         <li><b>Staff</b> can do daily work (styles, invoices, orders, clients, etc.), but not Team or Settings.</li>
-        <li><b>Runner</b> can only see the Petty Cash page (nothing else) — meant for field/sourcing staff.</li>
+        <li><b>Runner</b> can only see Petty Cash, Suggestions and Team Chat — meant for field/sourcing staff.</li>
+        <li>Everyone else picks a <b>Category</b> — Pattern Master, Cutting Master, Finishing, or any you add — configured in Settings → Team Categories. Each category starts with <u>no</u> access until you tick pages for it, and every account in that category shares those pages. Add a new category anytime (e.g. a future "Sampling" team) without touching this app's code.</li>
+        <li>Everyone gets their own <b>Team Chat</b> channel with Admin — Staff, Runner and each Category all have a separate private channel.</li>
         <li>When you <b>Deactivate</b> someone, their login stops working shortly after (within a few minutes).</li>
         <li><b>Remove</b> permanently deletes their account.</li>
       </ul>
@@ -5265,7 +5569,7 @@ function renderTeam(){
 }
 
 function renderActivityLog(){
-  if(!isAdmin()){
+  if(!isAdmin() && !(isMaster() && masterCanSeePage('activitylog'))){
     return `<div class="empty-state"><div class="big">&#128274;</div>Only Admins have access to the Activity Log.</div>`;
   }
   const q=(window._activityLogSearch||'').toLowerCase();
@@ -5278,11 +5582,21 @@ function renderActivityLog(){
   ${items.length? `<div class="panel" style="padding:16px;overflow:auto"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Details</th></tr></thead><tbody>${items.map(a=>`<tr><td style="white-space:nowrap;font-size:12px;color:var(--slate)">${a.timestamp?new Date(a.timestamp).toLocaleString('en-IN'):'-'}</td><td>${escapeHTML(a.user||'')}</td><td><b>${escapeHTML(a.action||'')}</b></td><td>${escapeHTML(a.details||'')}</td></tr>`).join('')}</tbody></table></div>` : `<div class="empty-state"><div class="big">📜</div>No activity recorded yet.</div>`}`;
 }
 
+function parseRoleValue(value){
+  if(value && value.indexOf('master:')===0){
+    return { role:'master', category: value.slice(7) };
+  }
+  return { role: value, category: null };
+}
 function approvePendingUser(uid){
   const sel = document.getElementById('pending_role_'+uid);
-  const role = sel ? sel.value : 'staff';
-  functionsApi.httpsCallable('approveUser')({ uid, role })
-    .then(()=>showToast('User approved.'))
+  const raw = sel ? sel.value : 'staff';
+  const parsed = parseRoleValue(raw);
+  functionsApi.httpsCallable('approveUser')({ uid, role: parsed.role })
+    .then(()=>{
+      showToast('User approved.');
+      if(parsed.category) db.collection('users').doc(uid).set({category:parsed.category}, {merge:true});
+    })
     .catch(err=>showToast('Error: ' + (err.message||'Could not approve.'),'error'));
 }
 function rejectPendingUser(uid, email){
@@ -5303,6 +5617,7 @@ function openAddUserModal(){
       <select id="nu_role">
         <option value="staff" selected>Staff</option>
         <option value="runner">Runner</option>
+        ${getCustomCategories().map(c=>`<option value="master:${c.id}">${escapeHTML(c.name)}</option>`).join('')}
         <option value="admin">Admin</option>
       </select>
     </div>
@@ -5316,13 +5631,30 @@ function submitAddUser(){
   const photoUrl = document.getElementById('nu_photo').value.trim();
   const email = document.getElementById('nu_email').value.trim();
   const password = document.getElementById('nu_pass').value;
-  const role = document.getElementById('nu_role').value;
+  const parsed = parseRoleValue(document.getElementById('nu_role').value);
   const errEl = document.getElementById('nu_error');
   if(!name || !email || !password){ errEl.textContent = 'Fill in all fields.'; return; }
   if(password.length < 6){ errEl.textContent = 'Password must be at least 6 characters.'; return; }
   errEl.textContent = 'Adding...';
-  functionsApi.httpsCallable('createStaffUser')({ name, email, password, role, photoUrl })
-    .then(()=>{ closeModal(); showToast('Staff added.'); })
+  functionsApi.httpsCallable('createStaffUser')({ name, email, password, role:parsed.role, photoUrl })
+    .then((res)=>{
+      closeModal(); showToast('Staff added.');
+      if(parsed.category){
+        const newUid = res && res.data && res.data.uid;
+        if(newUid){
+          db.collection('users').doc(newUid).set({category:parsed.category}, {merge:true});
+        } else {
+          let tries = 0;
+          const tryAssign = ()=>{
+            tries++;
+            const u = (DB.users||[]).find(x=>x.email===email);
+            if(u) db.collection('users').doc(u.id).set({category:parsed.category}, {merge:true});
+            else if(tries<6) setTimeout(tryAssign, 1500);
+          };
+          setTimeout(tryAssign, 1500);
+        }
+      }
+    })
     .catch(err=>{ errEl.textContent = 'Error: ' + (err.message || 'Something went wrong.'); });
 }
 function openEditPhotoModal(uid, currentUrl){
@@ -5340,10 +5672,15 @@ function submitEditPhoto(uid){
     .then(()=>{ closeModal(); showToast('Photo updated.'); })
     .catch(err=>{ document.getElementById('ep_error').textContent = 'Error: ' + err.message; });
 }
-function changeUserRole(uid, role){
+function changeUserRole(uid, value){
   const u=(DB.users||[]).find(x=>x.id===uid);
-  functionsApi.httpsCallable('setUserRole')({ uid, role })
-    .then(()=>{ showToast('Role updated.'); logActivity('Changed Role', `${u?u.email:uid} → ${role}`); })
+  const parsed = parseRoleValue(value);
+  functionsApi.httpsCallable('setUserRole')({ uid, role: parsed.role })
+    .then(()=>{
+      const catName = parsed.category ? ((categoryById(parsed.category)||{}).name || parsed.category) : parsed.role;
+      showToast('Role updated.'); logActivity('Changed Role', `${u?u.email:uid} → ${catName}`);
+      return db.collection('users').doc(uid).set({category: parsed.category||null}, {merge:true});
+    })
     .catch(err=>showToast('Error: ' + (err.message||'Could not change role.'),'error'));
 }
 function toggleUserActive(uid, makeActive){
@@ -5436,7 +5773,7 @@ function renderLinks(){
           <img src="${faviconFor(l.url)}" style="width:20px; height:20px; border-radius:4px; flex-shrink:0;" onerror="this.style.visibility='hidden'">
           <a href="${escapeHTML(l.url)}" target="_blank" rel="noopener" style="flex:1; min-width:0; color:var(--charcoal); font-weight:600; font-size:13.5px; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(l.title)}</a>
           <button class="btn btn-ghost btn-sm" onclick="openLinkModal('${l.id}')">Edit</button>
-          ${isAdmin()? `<button class="btn btn-danger btn-sm" onclick="deleteLink('${l.id}')">Delete</button>` : ''}
+          ${(isAdmin() || (isMaster() && masterCanSeePage('links')))? `<button class="btn btn-danger btn-sm" onclick="deleteLink('${l.id}')">Delete</button>` : ''}
         </div>
       `).join('')}
     </div>
@@ -5495,7 +5832,7 @@ function saveLink(){
   ref.set(data, {merge:true}).then(()=>{ closeModal(); showToast(l.id?'Link updated.':'Link added.'); render(); }).catch(e=>{ errEl.textContent = 'Error: ' + e.message; });
 }
 function deleteLink(id){
-  if(!isAdmin()){ showToast('Only Admins can delete links.','error'); return; }
+  if(!isAdmin() && !(isMaster() && masterCanSeePage('links'))){ showToast('Only Admins can delete links.','error'); return; }
   confirmAction('Delete this link?', function(){
     db.collection('links').doc(id).delete().then(()=>{ showToast('Link deleted.'); logActivity('Deleted Link', id); }).catch(e=>showToast('Delete failed: '+e.message,'error'));
   });
@@ -5552,17 +5889,28 @@ function renderPettyCash(){
 
   const rowsHTML = entries.length ? entries.slice().reverse().map(e=>{
     const vendor = e.vendorId ? (DB.vendors||[]).find(v=>v.id===e.vendorId) : null;
+    const isExpense = e.type==='expense';
+    const material = e.materialService || e.description || (isExpense ? '-' : 'Advance');
+    const buyer = e.buyerName || '-';
+    const cpu = isExpense && e.costPerUnit != null ? Number(e.costPerUnit) : null;
+    const units = isExpense ? (e.units || '-') : '-';
+    const qty = isExpense && e.qty != null ? Number(e.qty) : null;
+    const total = Number(e.total != null ? e.total : e.amount) || 0;
     return `
     <tr>
       <td>${e.date? new Date(e.date).toLocaleDateString('en-IN') : '-'}</td>
-      <td>${e.type==='advance' ? '<span class="tag" style="background:var(--accent-light); color:var(--gold-dark);">Advance</span>' : '<span class="tag">Expense</span>'}</td>
-      <td>${escapeHTML(e.description||e.category||'')}${e.notes? `<div style="font-size:11px; color:var(--slate);">${escapeHTML(e.notes)}</div>` : ''}</td>
+      <td>${escapeHTML(material)}</td>
       <td>${vendor? escapeHTML(vendor.name) : '-'}</td>
-      <td class="mono" style="color:${e.type==='advance'?'#2E7D32':'var(--brick,#B14A3C)'};">${e.type==='advance'?'+':'-'}${fmtINR(e.amount)}</td>
+      <td>${escapeHTML(buyer)}</td>
+      <td class="mono">${cpu != null ? fmtINR(cpu) : '-'}</td>
+      <td>${escapeHTML(units)}</td>
+      <td class="mono">${qty != null ? qty : '-'}</td>
+      <td class="mono" style="color:${e.type==='advance'?'#2E7D32':'var(--brick,#B14A3C)'};">${e.type==='advance'?'+':'-'}${fmtINR(total)}</td>
+      <td>${e.notes?`<div style="font-size:11px; color:var(--slate);">${escapeHTML(e.notes)}</div>`:'-'}</td>
       <td>${escapeHTML(e.createdByName||'')}</td>
-      <td>${isAdmin()? `<button class="btn btn-danger btn-sm" onclick="deletePettyCashEntry('${e.id}')">Delete</button>` : ''}</td>
+      <td>${(isAdmin() || (isMaster() && masterCanSeePage('pettycash')))? `<button class="btn btn-danger btn-sm" onclick="deletePettyCashEntry('${e.id}')">Delete</button>` : ''}</td>
     </tr>
-  `;}).join('') : `<tr><td colspan="7" style="text-align:center; color:var(--slate);">No entries yet.</td></tr>`;
+  `;}).join('') : `<tr><td colspan="11" style="text-align:center; color:var(--slate);">No entries yet.</td></tr>`;
 
   return `
     <div class="page-header">
@@ -5571,7 +5919,7 @@ function renderPettyCash(){
         <p class="page-sub">Track advances given and what was purchased with them.</p>
       </div>
       <div style="display:flex; gap:8px;">
-        ${isAdmin()? `<button class="btn btn-ghost" onclick="openPettyCashModal('advance')">+ Add Advance</button>` : ''}
+        ${(isAdmin() || (isMaster() && masterCanSeePage('pettycash')))? `<button class="btn btn-ghost" onclick="openPettyCashModal('advance')">+ Add Advance</button>` : ''}
         <button class="btn btn-primary" onclick="openPettyCashModal('expense')">+ Add Expense</button>
       </div>
     </div>
@@ -5614,7 +5962,7 @@ function renderPettyCash(){
     </div>
     <div class="panel" style="overflow:auto;">
       <table style="width:100%;">
-        <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Vendor</th><th>Amount</th><th>Added By</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Material/Service</th><th>Vendor Name</th><th>Buyer Name</th><th>Cost Per Unit</th><th>Units</th><th>Qty</th><th>Total</th><th>Notes</th><th>Added By</th><th></th></tr></thead>
         <tbody>${rowsHTML}</tbody>
       </table>
     </div>
@@ -5622,54 +5970,52 @@ function renderPettyCash(){
 }
 function openPettyCashModal(type){
   const vendorOptions = (DB.vendors||[]).map(v=>`<option value="${v.id}">${escapeHTML(v.name)}</option>`).join('');
+  const buyerOptions = (DB.clients||[]).map(c=>{ const name=c.name||c.companyName||c.clientName||''; return name?`<option value="${escapeHTML(name)}">`:''; }).join('');
   showModal(`
     <h2>${type==='advance' ? 'Add Advance' : 'Add Expense'}</h2>
     <div class="field"><label>Date</label><input type="date" id="pc_date" value="${todayStr()}"></div>
-    <div class="field"><label>${type==='advance' ? 'Notes' : 'Description (what was purchased)'}</label><input type="text" id="pc_desc" placeholder="${type==='advance' ? 'e.g. Advance for sourcing' : 'e.g. Thread, Porter Gurgaon to Delhi'}"></div>
-    ${type==='expense' ? `
-      <div class="field"><label>Category</label>
-        <select id="pc_category">
-          <option value="Material">Material</option>
-          <option value="Transport">Transport</option>
-          <option value="Other">Other</option>
-        </select>
+    ${type==='advance' ? `
+      <div class="field"><label>Notes</label><input type="text" id="pc_desc" placeholder="e.g. Advance for sourcing"></div>
+      <div class="field"><label>Amount ₹</label><input type="number" id="pc_amount" min="0" step="0.01" placeholder="0"></div>
+    ` : `
+      <div class="field"><label>Material / Service</label><input type="text" id="pc_material" placeholder="e.g. Black Satin, Solvent, Bag Printing"></div>
+      <div class="field"><label>Vendor Name</label><select id="pc_vendor"><option value="">-- Select Vendor --</option>${vendorOptions}</select></div>
+      <div class="field"><label>Buyer Name</label><input type="text" id="pc_buyer" list="pc_buyer_list" placeholder="e.g. Tiffany, Corset Vogue, Others"><datalist id="pc_buyer_list">${buyerOptions}</datalist></div>
+      <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="field"><label>Cost Per Unit ₹</label><input type="number" id="pc_cost" min="0" step="0.01" placeholder="0" oninput="calculatePettyCashTotal()"></div>
+        <div class="field"><label>Units</label><input type="text" id="pc_units" list="pc_units_list" placeholder="Mtr / Ltr / Pcs / Kg"><datalist id="pc_units_list"><option value="Mtr"><option value="Ltr"><option value="Pcs"><option value="Kg"><option value="Set"><option value="Roll"><option value="Nos"><option value="Other"></datalist></div>
       </div>
-      <div class="field"><label>Vendor (optional)</label>
-        <select id="pc_vendor"><option value="">-- None --</option>${vendorOptions}</select>
+      <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="field"><label>Qty</label><input type="number" id="pc_qty" min="0" step="0.01" placeholder="0" oninput="calculatePettyCashTotal()"></div>
+        <div class="field"><label>Total ₹</label><input type="number" id="pc_amount" readonly style="font-weight:700; background:var(--cream,#f7f3ec);" placeholder="0"></div>
       </div>
-    ` : ''}
-    <div class="field"><label>Amount ₹</label><input type="number" id="pc_amount" placeholder="0"></div>
+    `}
     <div class="field"><label>Notes (optional)</label><textarea id="pc_notes" placeholder="Any extra details"></textarea></div>
     <div class="form-error" id="pc_error"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="savePettyCashEntry('${type}')">Save</button>
-    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="savePettyCashEntry('${type}')">Save</button></div>
   `);
 }
+function calculatePettyCashTotal(){
+  const cost=Number(document.getElementById('pc_cost')?.value)||0, qty=Number(document.getElementById('pc_qty')?.value)||0, el=document.getElementById('pc_amount');
+  if(el) el.value=cost>0&&qty>0?(cost*qty).toFixed(2).replace(/\.00$/,''):'';
+}
 function savePettyCashEntry(type){
-  const date = document.getElementById('pc_date').value;
-  const description = document.getElementById('pc_desc').value.trim();
-  const amount = Number(document.getElementById('pc_amount').value) || 0;
-  const notes = document.getElementById('pc_notes').value.trim();
-  const errEl = document.getElementById('pc_error');
-  if(!date || amount <= 0){ errEl.textContent = 'Enter a valid date and amount.'; return; }
-  const data = {
-    type,
-    date,
-    amount,
-    description,
-    notes,
-    createdAt: Date.now(),
-    createdBy: currentUser.uid,
-    createdByName: (DB.users.find(u=>u.id===currentUser.uid)||{}).name || currentUser.email,
-  };
-  if(type==='expense'){
-    data.category = document.getElementById('pc_category').value;
-    const vendorId = document.getElementById('pc_vendor').value;
-    if(vendorId) data.vendorId = vendorId;
+  const date=document.getElementById('pc_date').value, notes=document.getElementById('pc_notes').value.trim(), errEl=document.getElementById('pc_error');
+  let amount=0;
+  const data={type,date,notes,createdAt:Date.now(),createdBy:currentUser.uid,createdByName:(DB.users.find(u=>u.id===currentUser.uid)||{}).name||currentUser.email};
+  if(type==='advance'){
+    data.description=document.getElementById('pc_desc').value.trim(); amount=Number(document.getElementById('pc_amount').value)||0;
+  }else{
+    data.materialService=document.getElementById('pc_material').value.trim(); data.description=data.materialService;
+    data.costPerUnit=Number(document.getElementById('pc_cost').value)||0; data.units=document.getElementById('pc_units').value.trim(); data.qty=Number(document.getElementById('pc_qty').value)||0;
+    amount=Number(document.getElementById('pc_amount').value)||(data.costPerUnit*data.qty); data.total=amount;
+    const vendorId=document.getElementById('pc_vendor').value; if(vendorId) data.vendorId=vendorId;
+    data.buyerName=document.getElementById('pc_buyer').value.trim();
+    if(!data.materialService||!data.units||data.costPerUnit<=0||data.qty<=0){errEl.textContent='Please enter Material/Service, Units, Cost Per Unit and Qty.';return;}
   }
-  db.collection('pettyCash').add(data).then(()=>{ closeModal(); showToast(type==='advance'?'Advance added.':'Expense added.'); }).catch(e=>{ errEl.textContent = 'Error: ' + e.message; });
+  if(!date||amount<=0){errEl.textContent='Enter a valid date and amount.';return;}
+  data.amount=amount;
+  db.collection('pettyCash').add(data).then(()=>{closeModal();showToast(type==='advance'?'Advance added.':'Expense added.');}).catch(e=>{errEl.textContent='Error: '+e.message;});
 }
 function deletePettyCashEntry(id){
   showModal(`
@@ -5696,6 +6042,40 @@ function saveStaffPageAccess(){
   db.collection('meta').doc('settings').set({staffPageAccess:access}, {merge:true})
     .then(()=>{ showToast('Staff access saved.'); logActivity('Updated Staff Page Access', Object.entries(access).filter(([k,v])=>!v).map(([k])=>k).join(', ')||'All visible'); })
     .catch(err=>showToast('Save failed: '+err.message,'error'));
+}
+function saveCategories(){
+  const cats = getCustomCategories().map(cat=>{
+    const nameEl = document.getElementById('catname_'+cat.id);
+    const name = nameEl ? nameEl.value.trim() : cat.name;
+    const pages = {};
+    CUSTOM_ROLE_PAGES.forEach(p=>{
+      const el = document.getElementById('catpage_'+cat.id+'_'+p.key);
+      pages[p.key] = el ? el.checked : false;
+    });
+    return { id:cat.id, name: name||cat.name, pages };
+  });
+  db.collection('meta').doc('settings').set({customCategories:cats}, {merge:true})
+    .then(()=>{ showToast('Categories saved.'); logActivity('Updated Team Categories', cats.map(c=>c.name).join(', ')); render(); })
+    .catch(err=>showToast('Save failed: '+err.message,'error'));
+}
+function addCategoryPrompt(){
+  const name = prompt('New category name (e.g. Sampling, Embroidery):');
+  if(!name || !name.trim()) return;
+  const id = slugifyCategoryName(name.trim());
+  const cats = getCustomCategories().concat([{id, name:name.trim(), pages:{}}]);
+  db.collection('meta').doc('settings').set({customCategories:cats}, {merge:true})
+    .then(()=>{ showToast('Category added — tick its pages and Save.'); logActivity('Added Team Category', name.trim()); render(); })
+    .catch(err=>showToast('Save failed: '+err.message,'error'));
+}
+function deleteCategoryPrompt(id, name){
+  const inUse = (DB.users||[]).filter(u=>u.role==='master' && u.category===id);
+  const warn = inUse.length ? ` ${inUse.length} team member(s) are currently in this category and will lose access until reassigned.` : '';
+  confirmAction(`Delete the "${name}" category?${warn}`, function(){
+    const cats = getCustomCategories().filter(c=>c.id!==id);
+    db.collection('meta').doc('settings').set({customCategories:cats}, {merge:true})
+      .then(()=>{ showToast('Category deleted.'); logActivity('Deleted Team Category', name); render(); })
+      .catch(err=>showToast('Save failed: '+err.message,'error'));
+  });
 }
 function saveSettings(){
   const data = {
@@ -5794,7 +6174,7 @@ function exportData(){
 
 /* ============================= SUGGESTIONS (Anonymous feedback box) ============================= */
 function renderSuggestions(){
-  return isAdmin() ? renderSuggestionsAdmin() : renderSuggestionsSubmitForm();
+  return (isAdmin() || (isMaster() && masterCanSeePage('suggestions'))) ? renderSuggestionsAdmin() : renderSuggestionsSubmitForm();
 }
 function renderSuggestionsSubmitForm(){
   const sent = window._suggestionSent;
@@ -5848,6 +6228,95 @@ function updateSuggestionStatus(id,status){
 function saveSuggestionReply(id){
   const reply = document.getElementById('sg_reply_'+id).value.trim();
   db.collection('suggestions').doc(id).set({reply},{merge:true}).then(()=>showToast('Note saved.')).catch(e=>showToast('Failed: '+e.message,'error'));
+}
+
+/* ============================= TEAM CHAT (role-wise channels) ============================= */
+/* Each non-admin role gets one private channel with Admin. Admin can switch
+   between all channels via tabs; everyone else sees only their own channel. */
+function myChatName(){
+  const myProfile = (DB.users||[]).find(u=>u.id===(currentUser&&currentUser.uid));
+  return (myProfile && myProfile.name) || (currentUser && currentUser.email) || 'Someone';
+}
+function currentChatChannelKey(){
+  const allowed = chatChannelsForRole(appRole);
+  if(!allowed.length) return null;
+  const wanted = window._activeChatChannel;
+  if(wanted && allowed.some(c=>c.key===wanted)) return wanted;
+  return allowed[0].key;
+}
+function renderChat(){
+  const allowed = chatChannelsForRole(appRole);
+  if(!allowed.length){
+    return `<div class="empty-state"><div class="big">💬</div>Team Chat is not available for your account.</div>`;
+  }
+  const activeKey = currentChatChannelKey();
+  window._activeChatChannel = activeKey;
+  const activeLabel = (allowed.find(c=>c.key===activeKey)||{}).label || '';
+  const tabsHTML = isAdmin() ? `
+    <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+      ${allowed.map(c=>`<button class="btn ${c.key===activeKey?'btn-primary':'btn-ghost'} btn-sm" onclick="switchChatChannel('${c.key}')">${escapeHTML(c.label)}</button>`).join('')}
+    </div>` : '';
+  const msgs = (DB.chatMessages||[]).filter(m=>m.channel===activeKey).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  const msgsHTML = msgs.length ? msgs.map(m=>{
+    const mine = currentUser && m.senderId===currentUser.uid;
+    return `<div style="display:flex; flex-direction:column; align-items:${mine?'flex-end':'flex-start'}; margin-bottom:10px;">
+      <div style="font-size:11px; color:var(--slate); margin-bottom:2px;">${escapeHTML(m.senderName||'')} <span>(${escapeHTML(roleDisplayName(m.senderRole, m.senderCategory))})</span> · ${m.createdAt?new Date(m.createdAt).toLocaleString('en-IN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'}):''}</div>
+      <div style="max-width:78%; padding:8px 12px; border-radius:12px; font-size:13.5px; white-space:pre-wrap; background:${mine?'var(--gold)':'var(--ivory)'}; color:${mine?'#fff':'var(--charcoal)'};">${escapeHTML(m.text||'')}</div>
+    </div>`;
+  }).join('') : `<div class="empty-state" style="padding:30px;"><div class="big">💬</div>No messages yet. Say hello!</div>`;
+  return `<div class="page-header"><div><h1 class="page-title">Team Chat</h1><p class="page-sub">${escapeHTML(activeLabel)} ↔ Admin${isAdmin()?' — switch channels above':''}</p></div></div>
+  ${tabsHTML}
+  <div class="panel" style="padding:16px; display:flex; flex-direction:column; height:60vh;">
+    <div id="chatMessagesBox" style="flex:1; overflow-y:auto; padding-right:4px; margin-bottom:12px;">${msgsHTML}</div>
+    <div style="display:flex; gap:8px;">
+      <input id="chatInputBox" placeholder="Type a message..." style="flex:1;" onkeydown="if(event.key==='Enter'){sendChatMessage();}">
+      <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+    </div>
+  </div>`;
+}
+function switchChatChannel(key){
+  window._activeChatChannel = key;
+  render();
+  setTimeout(scrollChatToBottom, 0);
+}
+function sendChatMessage(){
+  const input = document.getElementById('chatInputBox');
+  if(!input) return;
+  const text = input.value.trim();
+  if(!text) return;
+  const channel = currentChatChannelKey();
+  if(!channel) return;
+  input.value = '';
+  db.collection('chatMessages').add({
+    channel, text,
+    senderId: currentUser.uid,
+    senderName: myChatName(),
+    senderRole: appRole,
+    senderCategory: appRole==='master' ? myCategoryId() : null,
+    createdAt: Date.now()
+  }).then(()=>{ setTimeout(scrollChatToBottom, 50); }).catch(e=>showToast('Message not sent: '+e.message,'error'));
+}
+function scrollChatToBottom(){
+  const box = document.getElementById('chatMessagesBox');
+  if(box) box.scrollTop = box.scrollHeight;
+  try{
+    const key = currentChatChannelKey();
+    if(key) localStorage.setItem('chatLastSeen_'+key, String(Date.now()));
+  }catch(e){}
+  updateChatUnreadBadge();
+}
+function updateChatUnreadBadge(){
+  const badge = document.getElementById('chatUnreadBadge');
+  if(!badge || !appRole) return;
+  const allowed = chatChannelsForRole(appRole);
+  let unread = 0;
+  allowed.forEach(c=>{
+    let lastSeen = 0;
+    try{ lastSeen = Number(localStorage.getItem('chatLastSeen_'+c.key))||0; }catch(e){}
+    unread += (DB.chatMessages||[]).filter(m=>m.channel===c.key && (m.createdAt||0)>lastSeen && m.senderId!==(currentUser&&currentUser.uid)).length;
+  });
+  badge.textContent = unread ? String(unread) : '';
+  badge.style.cssText = unread ? 'background:var(--brick); color:#fff; border-radius:99px; padding:1px 6px; font-size:10.5px; margin-left:4px;' : '';
 }
 
 /* ============================= MODAL HELPERS ============================= */
@@ -5908,6 +6377,11 @@ function closeModal(){
 document.getElementById('overlay').addEventListener('click', function(e){
   if(e.target === this) closeModal();
 });
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(err){console.log('SW register failed', err);});
+  });
+}
 </script>
 </body>
 </html>
