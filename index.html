@@ -842,7 +842,53 @@ function avatarHTML(name, photoUrl, size){
 
 const INDIAN_STATES = ["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Jammu and Kashmir","Ladakh","Puducherry","Chandigarh"];
 const RATE_UNITS = ['ltr','mtr','kg','gm','pc','pkt','yard','inch','cm','pair','dozen','gross','set','roll','sheet','box','hour','day'];
-const RATE_CATEGORIES = ['Fabric','Chemical/Solvent','Hardware/Trim','Other'];
+const RATE_CATEGORIES_PRODUCTS = ['Fabric','Lace','Trims','Zippers','Buttons','Thread','Embroidery Thread/Material','Sequins/Beads/Stones','Elastic','Lining','Interfacing/Interlining','Hooks & Eyes','Velcro','Labels & Tags','Pattern Paper','Packaging Material','Poly Bags/Packing','Hangers','Tools & Equipment','Chemical/Solvent'];
+const RATE_CATEGORIES_SERVICES = ['Printing','Washing','Dyeing','Embroidery Service','Spot Removal','Cutting','Stitching/Tailoring','Ironing/Pressing','Pattern Making','Sampling','Quality Checking','Courier/Logistics'];
+const RATE_CATEGORIES = RATE_CATEGORIES_PRODUCTS.concat(RATE_CATEGORIES_SERVICES).concat(['Other']); // kept for any old code that still reads this flat list
+/* ---- Material/Service categories: default list above, plus any categories the
+   user has manually added — those are saved to Firestore settings so they show
+   up for everyone, on every device, forever. ---- */
+function customRateCategories(){
+  return (DB.settings.materialRateCategories||[]).filter(c=>c && !RATE_CATEGORIES.includes(c));
+}
+function rateCategoryOptionsHTML(selected){
+  const optHTML = (arr)=>arr.map(c=>`<option ${selected===c?'selected':''}>${escapeHTML(c)}</option>`).join('');
+  let html = `<optgroup label="Products">${optHTML(RATE_CATEGORIES_PRODUCTS)}</optgroup>`;
+  html += `<optgroup label="Services">${optHTML(RATE_CATEGORIES_SERVICES)}</optgroup>`;
+  const custom = customRateCategories();
+  if(custom.length) html += `<optgroup label="Custom">${optHTML(custom)}</optgroup>`;
+  html += `<option ${selected==='Other'?'selected':''}>Other</option>`;
+  html += `<option value="__add_new__">+ Add New Category…</option>`;
+  return html;
+}
+/* ---- Called from the category <select onchange>. Handles picking the special
+   "+ Add New Category" option: prompts for a name, adds it to the dropdown
+   immediately, and saves it to Firestore so it persists for next time. ---- */
+function handleRateCategoryChange(sel){
+  if(sel.value === '__add_new__'){
+    const name = prompt('New category name (e.g. Interlining, Spot Removal):');
+    if(!name || !name.trim()){
+      sel.selectedIndex = 0;
+    } else {
+      const trimmed = name.trim();
+      const already = Array.from(sel.options).some(o=>o.value===trimmed);
+      if(!already){
+        const opt = document.createElement('option');
+        opt.value = trimmed; opt.textContent = trimmed;
+        const addNewOpt = sel.querySelector('option[value="__add_new__"]');
+        sel.insertBefore(opt, addNewOpt);
+      }
+      sel.value = trimmed;
+      if(!RATE_CATEGORIES.includes(trimmed) && !customRateCategories().includes(trimmed)){
+        const updated = customRateCategories().concat([trimmed]);
+        db.collection('meta').doc('settings').set({materialRateCategories:updated}, {merge:true})
+          .then(()=>{ showToast('Category added — saved for next time too.'); logActivity('Added Material/Service Category', trimmed); })
+          .catch(err=>showToast('Save failed: '+err.message,'error'));
+      }
+    }
+  }
+  if(sel.id==='vr_category' && typeof rateModalCategoryChanged==='function') rateModalCategoryChanged(sel.value);
+}
 const CHALLAN_UNITS = ['Pcs','Mtr','Kg','Gm','Yds','Set','Roll','Box','Other'];
 const PO_UNITS = ['Pcs','Mtr','Kg','Gm','Yds','Set','Roll','Box','Other'];
 const PO_STATUSES = ['Draft','Sent','Confirmed','Partially Received','Completed','Cancelled'];
@@ -1028,7 +1074,8 @@ const defaultSettings = {
   lutNumber:'',
   lutDetails:'',
   staffPageAccess:null,
-  customCategories:null
+  customCategories:null,
+  materialRateCategories:[]
 };
 
 /* ============================= IN-MEMORY CACHE (synced from Firestore) ============================= */
@@ -5108,7 +5155,7 @@ function openInlineRate(type,index){
 }
 function renderInlineRateModal(){
   const st=window._inlineRateState; const type=st.type; const d=st.data;
-  showModal(`<h2>${st.index!==null?'Edit':'Add'} ${type==='service'?'Service':'Material'}</h2><div class="field"><label>${type==='service'?'Service Name':'Material Name'}</label><input id="ir_name" value="${escapeHTML(d.name||'')}" placeholder="${type==='service'?'Stitching / Embroidery':'Black Satin'}"></div><div class="field-row">${type==='material'?`<div class="field"><label>Category</label><select id="ir_category">${RATE_CATEGORIES.map(c=>`<option ${(d.category||'Fabric')===c?'selected':''}>${c}</option>`).join('')}</select></div>`:''}<div class="field"><label>Unit</label><select id="ir_unit">${RATE_UNITS.map(u=>`<option ${d.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div><div class="field-row"><div class="field"><label>Sampling Price ₹</label><input type="number" id="ir_sampling_price" value="${d.samplingPrice||''}"></div><div class="field"><label>Sampling Qty</label><input id="ir_sampling_qty" value="${escapeHTML(String(d.samplingQty||''))}" placeholder="e.g. 2"></div></div><div class="field-row"><div class="field"><label>MOQ Price ₹ <span style="font-weight:400;color:var(--slate)">(price at MOQ qty)</span></label><input type="number" id="ir_moq_price" value="${d.moqPrice||''}"></div><div class="field"><label>MOQ Qty</label><input id="ir_moq_qty" value="${escapeHTML(String(d.moqQty||''))}" placeholder="e.g. 50"></div></div><div class="field-row"><div class="field"><label>Bulk Price ₹ <span style="font-weight:400;color:var(--slate)">(optional)</span></label><input type="number" id="ir_bulk_price" value="${d.bulkPrice||''}"></div><div class="field"><label>Bulk Qty</label><input id="ir_bulk_qty" value="${escapeHTML(String(d.bulkQty||''))}"></div></div><div class="field"><label>Notes</label><textarea id="ir_notes">${escapeHTML(d.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="renderVendorModal()">← Back to Vendor</button><button class="btn btn-primary" onclick="saveInlineRate()">Save ${type==='service'?'Service':'Material'}</button></div>`);
+  showModal(`<h2>${st.index!==null?'Edit':'Add'} ${type==='service'?'Service':'Material'}</h2><div class="field"><label>${type==='service'?'Service Name':'Material Name'}</label><input id="ir_name" value="${escapeHTML(d.name||'')}" placeholder="${type==='service'?'Stitching / Embroidery':'Black Satin'}"></div><div class="field-row">${type==='material'?`<div class="field"><label>Category</label><select id="ir_category" onchange="handleRateCategoryChange(this)">${rateCategoryOptionsHTML(d.category||'Fabric')}</select></div>`:''}<div class="field"><label>Unit</label><select id="ir_unit">${RATE_UNITS.map(u=>`<option ${d.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div><div class="field-row"><div class="field"><label>Sampling Price ₹</label><input type="number" id="ir_sampling_price" value="${d.samplingPrice||''}"></div><div class="field"><label>Sampling Qty</label><input id="ir_sampling_qty" value="${escapeHTML(String(d.samplingQty||''))}" placeholder="e.g. 2"></div></div><div class="field-row"><div class="field"><label>MOQ Price ₹ <span style="font-weight:400;color:var(--slate)">(price at MOQ qty)</span></label><input type="number" id="ir_moq_price" value="${d.moqPrice||''}"></div><div class="field"><label>MOQ Qty</label><input id="ir_moq_qty" value="${escapeHTML(String(d.moqQty||''))}" placeholder="e.g. 50"></div></div><div class="field-row"><div class="field"><label>Bulk Price ₹ <span style="font-weight:400;color:var(--slate)">(optional)</span></label><input type="number" id="ir_bulk_price" value="${d.bulkPrice||''}"></div><div class="field"><label>Bulk Qty</label><input id="ir_bulk_qty" value="${escapeHTML(String(d.bulkQty||''))}"></div></div><div class="field"><label>Notes</label><textarea id="ir_notes">${escapeHTML(d.notes||'')}</textarea></div><div class="modal-actions"><button class="btn btn-ghost" onclick="renderVendorModal()">← Back to Vendor</button><button class="btn btn-primary" onclick="saveInlineRate()">Save ${type==='service'?'Service':'Material'}</button></div>`);
 }
 function saveInlineRate(){
   const st=window._inlineRateState; const d=st.data;
@@ -5182,7 +5229,7 @@ function renderVendorRateModalHTML(){
     : cat==='Hardware/Trim'
     ? `<div class="field"><label>Size / Type</label><input id="vr_hwsize" value="${escapeHTML(d.hwSize||'')}" placeholder="e.g. 12mm Steel Busk"></div>`
     : '';
-  showModal(`<h2>${st.index!==null?'Edit':'Add'} ${type==='service'?'Service':'Material'} Rate</h2><div class="field"><label>${type==='service'?'Service Name':'Material Name'}</label><input id="vr_name" value="${escapeHTML(d.name||'')}" placeholder="${type==='service'?'Fabric Printing / Dyeing':'Black Satin'}"></div><div class="field-row"><div class="field"><label>Category</label><select id="vr_category" onchange="rateModalCategoryChanged(this.value)">${RATE_CATEGORIES.map(c=>`<option ${cat===c?'selected':''}>${c}</option>`).join('')}</select></div><div class="field"><label>Unit</label><select id="vr_unit">${RATE_UNITS.map(u=>`<option ${d.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div><div class="field"><label>Quality / Spec</label><input id="vr_quality" value="${escapeHTML(d.quality||'')}" placeholder="e.g. Premium Grade A"></div>${extraFields}<div class="field-row"><div class="field"><label>Sampling Price ₹</label><input type="number" id="vr_sampling_price" value="${d.samplingPrice||''}"></div><div class="field"><label>Sampling Qty</label><input id="vr_sampling_qty" value="${escapeHTML(String(d.samplingQty||''))}" placeholder="e.g. 2"></div></div><div class="field-row"><div class="field"><label>MOQ Price ₹</label><input type="number" id="vr_moq_price" value="${d.moqPrice!==undefined&&d.moqPrice!==''?d.moqPrice:(d.rate||'')}"></div><div class="field"><label>MOQ Qty</label><input id="vr_moq_qty" value="${escapeHTML(String(d.moqQty||d.moq||''))}" placeholder="e.g. 50"></div></div><div class="field-row"><div class="field"><label>Bulk Price ₹</label><input type="number" id="vr_bulk_price" value="${d.bulkPrice||''}"></div><div class="field"><label>Bulk Qty</label><input id="vr_bulk_qty" value="${escapeHTML(String(d.bulkQty||''))}" placeholder="e.g. 200"></div></div>${type==='material'?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="vr_pref" '+(d.preferred?'checked':'')+'> Preferred vendor for this material</label>':''}<div class="field"><label>Notes</label><textarea id="vr_notes">${escapeHTML(d.notes||'')}</textarea></div>${historyHTML}<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorRate()">Save Rate</button></div>`);
+  showModal(`<h2>${st.index!==null?'Edit':'Add'} ${type==='service'?'Service':'Material'} Rate</h2><div class="field"><label>${type==='service'?'Service Name':'Material Name'}</label><input id="vr_name" value="${escapeHTML(d.name||'')}" placeholder="${type==='service'?'Fabric Printing / Dyeing':'Black Satin'}"></div><div class="field-row"><div class="field"><label>Category</label><select id="vr_category" onchange="handleRateCategoryChange(this)">${rateCategoryOptionsHTML(cat)}</select></div><div class="field"><label>Unit</label><select id="vr_unit">${RATE_UNITS.map(u=>`<option ${d.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div><div class="field"><label>Quality / Spec</label><input id="vr_quality" value="${escapeHTML(d.quality||'')}" placeholder="e.g. Premium Grade A"></div>${extraFields}<div class="field-row"><div class="field"><label>Sampling Price ₹</label><input type="number" id="vr_sampling_price" value="${d.samplingPrice||''}"></div><div class="field"><label>Sampling Qty</label><input id="vr_sampling_qty" value="${escapeHTML(String(d.samplingQty||''))}" placeholder="e.g. 2"></div></div><div class="field-row"><div class="field"><label>MOQ Price ₹</label><input type="number" id="vr_moq_price" value="${d.moqPrice!==undefined&&d.moqPrice!==''?d.moqPrice:(d.rate||'')}"></div><div class="field"><label>MOQ Qty</label><input id="vr_moq_qty" value="${escapeHTML(String(d.moqQty||d.moq||''))}" placeholder="e.g. 50"></div></div><div class="field-row"><div class="field"><label>Bulk Price ₹</label><input type="number" id="vr_bulk_price" value="${d.bulkPrice||''}"></div><div class="field"><label>Bulk Qty</label><input id="vr_bulk_qty" value="${escapeHTML(String(d.bulkQty||''))}" placeholder="e.g. 200"></div></div>${type==='material'?'<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="vr_pref" '+(d.preferred?'checked':'')+'> Preferred vendor for this material</label>':''}<div class="field"><label>Notes</label><textarea id="vr_notes">${escapeHTML(d.notes||'')}</textarea></div>${historyHTML}<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveVendorRate()">Save Rate</button></div>`);
 }
 function saveVendorRate(){
   captureRateModalFields();
