@@ -612,89 +612,13 @@ body:not(.dark-mode) .mobile-topbar{box-shadow:0 1px 12px rgba(16,24,40,.08);}
 }
 </style>
 <style>
-/* ===== Corset Vogue cinematic wordmark intro ===== */
-#cvIntro{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#090909;color:#fff;overflow:hidden;transition:opacity .7s cubic-bezier(.22,1,.36,1),visibility .7s;}
-#cvIntro.is-done{opacity:0;visibility:hidden;pointer-events:none}
-#cvIntro .cv-noise{position:absolute;inset:-50%;opacity:.055;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:cvNoise .22s steps(2) infinite;}
-#cvIntro .cv-orb{position:absolute;width:42vw;height:42vw;max-width:620px;max-height:620px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.09),rgba(255,255,255,0) 68%);filter:blur(20px);animation:cvOrb 3.2s ease-in-out infinite alternate;}
-#cvIntro .cv-wordmark{position:relative;text-align:center;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.02em;font-weight:600;line-height:1.05;}
-#cvIntro .cv-main{font-size:clamp(42px,7.2vw,104px);display:flex;justify-content:center;align-items:center;white-space:nowrap;overflow:visible;padding:0 .08em;}
-#cvIntro .cv-letter{display:inline-block;opacity:0;transform:translate3d(var(--x),var(--y),0) rotate(var(--r)) scale(.55);filter:blur(8px);animation:cvLetter 1.15s cubic-bezier(.16,1,.3,1) forwards;animation-delay:calc(var(--i)*.075s + .12s);}
-#cvIntro .cv-sub{margin-top:22px;font-size:clamp(11px,1.3vw,16px);letter-spacing:.48em;text-transform:uppercase;font-weight:500;color:rgba(255,255,255,.58);opacity:0;transform:translateY(14px);animation:cvSub .9s .95s cubic-bezier(.22,1,.36,1) forwards;}
-#cvIntro .cv-line{width:min(180px,30vw);height:1px;background:rgba(255,255,255,.34);margin:25px auto 0;transform:scaleX(0);transform-origin:center;animation:cvLine .9s 1.1s cubic-bezier(.22,1,.36,1) forwards;}
-#cvIntro .cv-corner{position:absolute;inset:28px;pointer-events:none;}
-#cvIntro .cv-corner:before,#cvIntro .cv-corner:after{content:"";position:absolute;width:34px;height:34px;border-color:rgba(255,255,255,.16);border-style:solid;}
-#cvIntro .cv-corner:before{left:0;top:0;border-width:1px 0 0 1px}#cvIntro .cv-corner:after{right:0;bottom:0;border-width:0 1px 1px 0}
-@keyframes cvLetter{0%{opacity:0;transform:translate3d(var(--x),var(--y),0) rotate(var(--r)) scale(.72);filter:blur(8px)}48%{opacity:1;filter:blur(1px)}100%{opacity:1;transform:translate3d(0,0,0) rotate(0) scale(1);filter:blur(0)}}
-@keyframes cvSub{to{opacity:1;transform:none}}@keyframes cvLine{to{transform:scaleX(1)}}@keyframes cvNoise{0%{transform:translate(0,0)}25%{transform:translate(2%,-1%)}50%{transform:translate(-1%,2%)}75%{transform:translate(1%,1%)}100%{transform:translate(-2%,-1%)}}@keyframes cvOrb{to{transform:scale(1.12);opacity:.7}}
-@media(prefers-reduced-motion:reduce){#cvIntro .cv-letter{animation:none;opacity:1;transform:none;filter:none}#cvIntro .cv-sub{animation:none;opacity:1;transform:none}#cvIntro .cv-line{animation:none;transform:none}}
-
-/* Premium studio-data loading state — visual only; app logic remains unchanged. */
-#loadingScreen{position:fixed;inset:0;z-index:2147483000;display:flex!important;align-items:center;justify-content:center;background:rgba(247,247,250,.94);backdrop-filter:blur(22px) saturate(125%);-webkit-backdrop-filter:blur(22px) saturate(125%);color:#171723;transition:opacity .45s ease,visibility .45s ease;}
-#loadingScreen[style*="display: none"]{display:none!important;}
-.cv-loading-shell{position:relative;width:min(430px,calc(100vw - 42px));padding:42px 34px 34px;text-align:center;border:1px solid rgba(255,255,255,.9);border-radius:28px;background:rgba(255,255,255,.68);box-shadow:0 28px 80px rgba(24,22,45,.12),inset 0 1px 0 rgba(255,255,255,.95);overflow:hidden;animation:cvLoadIn .7s cubic-bezier(.22,1,.36,1) both;}
-.cv-loading-aura{position:absolute;width:230px;height:230px;left:50%;top:-130px;transform:translateX(-50%);border-radius:50%;background:radial-gradient(circle,rgba(126,96,180,.18),rgba(126,96,180,0) 68%);filter:blur(5px);animation:cvLoadAura 2.8s ease-in-out infinite;}
-.cv-loading-mark{position:relative;width:76px;height:76px;margin:0 auto 24px;display:grid;place-items:center;}
-.cv-loading-ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(98,78,145,.18);border-top-color:rgba(98,78,145,.85);border-right-color:rgba(98,78,145,.42);animation:cvLoadSpin 1.15s linear infinite;}
-.cv-loading-ring:after{content:"";position:absolute;inset:7px;border-radius:50%;border:1px dashed rgba(98,78,145,.18);animation:cvLoadSpinReverse 2.8s linear infinite;}
-.cv-loading-core{width:31px;height:31px;border-radius:10px;transform:rotate(45deg);background:linear-gradient(145deg,#171723,#75609a);box-shadow:0 8px 24px rgba(98,78,145,.22);animation:cvLoadPulse 1.7s ease-in-out infinite;}
-.cv-loading-kicker{position:relative;font-size:10px;line-height:1;letter-spacing:.32em;font-weight:700;color:#78688f;margin-left:.32em;margin-bottom:12px;}
-.cv-loading-title{position:relative;font-size:clamp(24px,5vw,31px);line-height:1.15;letter-spacing:-.035em;font-weight:600;color:#191923;}
-.cv-loading-status{position:relative;display:flex;align-items:center;justify-content:center;gap:4px;margin-top:14px;font-size:12px;letter-spacing:.01em;color:#777582;}
-.cv-loading-status i{width:3px;height:3px;border-radius:50%;background:#8b7aa5;animation:cvLoadDots 1.2s ease-in-out infinite;}
-.cv-loading-status i:nth-child(2){animation-delay:.16s}.cv-loading-status i:nth-child(3){animation-delay:.32s}.cv-loading-status i:nth-child(4){animation-delay:.48s}
-.cv-loading-progress{position:relative;width:100%;height:3px;margin-top:27px;border-radius:99px;background:rgba(34,31,45,.07);overflow:hidden;}
-.cv-loading-progress span{display:block;width:42%;height:100%;border-radius:inherit;background:linear-gradient(90deg,rgba(98,78,145,0),rgba(98,78,145,.8),rgba(98,78,145,0));animation:cvLoadProgress 1.65s cubic-bezier(.45,0,.35,1) infinite;}
-@keyframes cvLoadIn{from{opacity:0;transform:translateY(16px) scale(.975)}to{opacity:1;transform:none}}
-@keyframes cvLoadSpin{to{transform:rotate(360deg)}}
-@keyframes cvLoadSpinReverse{to{transform:rotate(-360deg)}}
-@keyframes cvLoadPulse{0%,100%{transform:rotate(45deg) scale(.88);opacity:.75}50%{transform:rotate(45deg) scale(1);opacity:1}}
-@keyframes cvLoadDots{0%,70%,100%{transform:translateY(0);opacity:.35}35%{transform:translateY(-3px);opacity:1}}
-@keyframes cvLoadProgress{0%{transform:translateX(-130%)}100%{transform:translateX(340%)}}
-@keyframes cvLoadAura{0%,100%{opacity:.65;transform:translateX(-50%) scale(.9)}50%{opacity:1;transform:translateX(-50%) scale(1.08)}}
-@media(max-width:480px){.cv-loading-shell{padding:36px 24px 28px;border-radius:24px}.cv-loading-mark{width:68px;height:68px;margin-bottom:21px}.cv-loading-title{font-size:25px}.cv-loading-status{font-size:11px}.cv-loading-progress{margin-top:24px}}
-@media(prefers-reduced-motion:reduce){.cv-loading-shell,.cv-loading-ring,.cv-loading-ring:after,.cv-loading-core,.cv-loading-status i,.cv-loading-progress span,.cv-loading-aura{animation:none!important}.cv-loading-progress span{margin-left:29%}}
+/* Simple, plain loading state -- no animation, no forced-visible CSS tricks. */
+.cv-loading-shell{text-align:center;padding:20px;}
+.cv-loading-title{font-size:20px;font-weight:600;color:#191923;margin-bottom:6px;}
+.cv-loading-status{font-size:13px;color:#777582;}
 </style>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1B2140">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Corset Vogue">
-<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
-
-<div id="cvIntro" aria-label="Corset Vogue Studio">
-  <div class="cv-noise"></div><div class="cv-orb"></div><div class="cv-corner"></div>
-  <div class="cv-wordmark">
-    <div class="cv-main" id="cvIntroMain"></div>
-    <div class="cv-sub">Studio Management</div>
-    <div class="cv-line"></div>
-  </div>
-</div>
-<script>
-(function(){
-  const intro=document.getElementById('cvIntro'), main=document.getElementById('cvIntroMain');
-  if(!intro||!main)return;
-  const text='Corset Vogue';
-  [...text].forEach((ch,i)=>{
-    const el=document.createElement('span');
-    el.className='cv-letter';
-    el.textContent=ch===' '? ' ':ch;
-    const side=i%2===0?-1:1;
-    el.style.setProperty('--i',i);
-    el.style.setProperty('--x',(side*(34+(i%4)*10))+'px');
-    el.style.setProperty('--y',((i%3)-1)*26+'px');
-    el.style.setProperty('--r',(side*(i%3===0?8:4))+'deg');
-    main.appendChild(el);
-  });
-  const finish=()=>{if(intro.classList.contains('is-done'))return;intro.classList.add('is-done');setTimeout(()=>intro.remove(),800)};
-  window.addEventListener('load',()=>setTimeout(finish,3000),{once:true});
-  setTimeout(finish,4800);
-})();
-</script>
-
 
 <div class="mobile-topbar no-print">
   <button class="global-back-btn" id="mobileBackBtn" onclick="goBack()">←</button>
@@ -709,15 +633,8 @@ body:not(.dark-mode) .mobile-topbar{box-shadow:0 1px 12px rgba(16,24,40,.08);}
 <div class="center-screen no-print" id="pendingScreen" style="display:none;"></div>
 <div class="center-screen no-print" id="loadingScreen" style="display:none;">
   <div class="cv-loading-shell" aria-live="polite">
-    <div class="cv-loading-aura"></div>
-    <div class="cv-loading-mark" aria-hidden="true">
-      <span class="cv-loading-ring"></span>
-      <span class="cv-loading-core"></span>
-    </div>
-    <div class="cv-loading-kicker">CORSET VOGUE</div>
-    <div class="cv-loading-title">Preparing your studio</div>
-    <div class="cv-loading-status"><span>Loading your studio data</span><i></i><i></i><i></i></div>
-    <div class="cv-loading-progress"><span></span></div>
+    <div class="cv-loading-title">Loading...</div>
+    <div class="cv-loading-status">Please wait</div>
   </div>
 </div>
 
@@ -6438,10 +6355,13 @@ function closeModal(){
 document.getElementById('overlay').addEventListener('click', function(e){
   if(e.target === this) closeModal();
 });
+// PWA install feature removed as requested — this is back to a plain single-file app.
+// Also actively unregister any old service worker still installed from before,
+// so it stops intercepting requests on returning visitors.
 if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){
-    navigator.serviceWorker.register('sw.js').catch(function(err){console.log('SW register failed', err);});
-  });
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(reg){ reg.unregister(); });
+  }).catch(function(){});
 }
 </script>
 </body>
