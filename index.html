@@ -1083,119 +1083,119 @@ function attachListeners(){
   }, err=>{ console.error(err); loadedFlags.settings = true; afterSync(); }));
 
   unsubscribers.push(db.collection('styles').onSnapshot(snap=>{
-    DB.styles = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.styles = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.styles = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.styles = true; afterSync(); }));
 
   unsubscribers.push(db.collection('clients').onSnapshot(snap=>{
-    DB.clients = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.clients = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.clients = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.clients = true; afterSync(); }));
 
   unsubscribers.push(db.collection('invoices').onSnapshot(snap=>{
-    DB.invoices = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.invoices = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.invoices = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.invoices = true; afterSync(); }));
 
   unsubscribers.push(db.collection('orders').onSnapshot(snap=>{
-    DB.orders = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.orders = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.orders = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.orders = true; afterSync(); }));
 
   unsubscribers.push(db.collection('tailors').onSnapshot(snap=>{
-    DB.tailors = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.tailors = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.tailors = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.tailors = true; afterSync(); }));
 
   unsubscribers.push(db.collection('challans').onSnapshot(snap=>{
-    DB.challans = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.challans = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.challans = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.challans = true; afterSync(); }));
 
   unsubscribers.push(db.collection('vendors').onSnapshot(snap=>{
-    DB.vendors = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.vendors = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.vendors = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.vendors = true; afterSync(); }));
 
   unsubscribers.push(db.collection('suggestions').onSnapshot(snap=>{
-    DB.suggestions = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.suggestions = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.suggestions = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.suggestions = true; afterSync(); }));
 
   unsubscribers.push(db.collection('inventory').onSnapshot(snap=>{
-    DB.inventory = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.inventory = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.inventory = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.inventory = true; afterSync(); }));
 
   unsubscribers.push(db.collection('activityLog').orderBy('timestamp','desc').limit(200).onSnapshot(snap=>{
-    DB.activityLog = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.activityLog = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.activityLog = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.activityLog = true; afterSync(); }));
 
   unsubscribers.push(db.collection('purchaseOrders').onSnapshot(snap=>{
-    DB.purchaseOrders = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.purchaseOrders = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.purchaseOrders = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.purchaseOrders = true; afterSync(); }));
 
   unsubscribers.push(db.collection('costings').onSnapshot(snap=>{
-    DB.costings = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.costings = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.costings = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.costings = true; afterSync(); }));
 
   unsubscribers.push(db.collection('listings').onSnapshot(snap=>{
-    DB.listings = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.listings = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.listings = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.listings = true; afterSync(); }));
 
   unsubscribers.push(db.collection('listingAccounts').onSnapshot(snap=>{
-    DB.listingAccounts = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.listingAccounts = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.listingAccounts = true;
     afterSync();
   }, err=>{ console.error(err); loadedFlags.listingAccounts = true; afterSync(); }));
 
   unsubscribers.push(db.collection('users').onSnapshot(snap=>{
-    DB.users = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.users = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.users = true;
     afterSync();
     render();
   }, err=>{ console.error(err); loadedFlags.users = true; afterSync(); }));
 
   unsubscribers.push(db.collection('links').onSnapshot(snap=>{
-    DB.links = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.links = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.links = true;
     afterSync();
     if(currentPage==='links') render();
   }, err=>{ console.error(err); loadedFlags.links = true; afterSync(); }));
 
   unsubscribers.push(db.collection('pendingUsers').onSnapshot(snap=>{
-    DB.pendingUsers = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.pendingUsers = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.pendingUsers = true;
     afterSync();
     render();
   }, err=>{ console.error(err); loadedFlags.pendingUsers = true; afterSync(); }));
 
   unsubscribers.push(db.collection('pettyCash').onSnapshot(snap=>{
-    DB.pettyCash = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.pettyCash = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.pettyCash = true;
     afterSync();
     if(currentPage==='pettycash') render();
   }, err=>{ console.error(err); loadedFlags.pettyCash = true; afterSync(); }));
 
   unsubscribers.push(db.collection('chatMessages').orderBy('createdAt','asc').limitToLast(300).onSnapshot(snap=>{
-    DB.chatMessages = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    DB.chatMessages = snap.docs.map(d=>({...d.data(), id:d.id}));
     loadedFlags.chatMessages = true;
     afterSync();
     if(currentPage==='chat'){ render(); }
