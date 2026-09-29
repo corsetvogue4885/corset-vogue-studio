@@ -1907,9 +1907,33 @@ function renderDashboard(){
 }
 
 /* ============================= STYLES ============================= */
+function getFilteredStyles(){
+  const filterClient = window._styleClientFilter || '';
+  const pq = (window._stylePatternQ || '').trim().toLowerCase();
+  let items = filterClient ? DB.styles.filter(s=>s.clientId===filterClient) : DB.styles;
+  if(pq) items = items.filter(s=>(s.patternCode||'').toLowerCase().includes(pq));
+  return items;
+}
+function renderStylesGridHTML(items){
+  const pq = (window._stylePatternQ || '').trim();
+  return items.length? `<div class="grid">${items.map(renderStyleCard).join('')}</div>` :
+    `<div class="empty-state"><div class="big">✦</div>${pq?'No style found with pattern code "'+escapeHTML(pq)+'".':'No styles found.'}</div>`;
+}
+function filterStylesByPattern(val){
+  window._stylePatternQ = val;
+  const items = getFilteredStyles();
+  const grid = document.getElementById('stylesGridWrap');
+  if(grid) grid.innerHTML = renderStylesGridHTML(items);
+  const cnt = document.getElementById('stylesCount');
+  if(cnt) cnt.textContent = items.length + ' of ' + DB.styles.length + ' styles';
+  const clr = document.getElementById('patternClearBtn');
+  if(clr) clr.style.display = val ? 'inline-flex' : 'none';
+}
 function renderStyles(){
   const filterClient = window._styleClientFilter || '';
-  const items = filterClient ? DB.styles.filter(s=>s.clientId===filterClient) : DB.styles;
+  const pq = window._stylePatternQ || '';
+  const items = getFilteredStyles();
+  const patternCodes = [...new Set(DB.styles.map(s=>(s.patternCode||'').trim()).filter(Boolean))].sort();
   return `
     <div class="page-header">
       <div>
@@ -1918,15 +1942,25 @@ function renderStyles(){
       </div>
       <button class="btn btn-primary" onclick="openStyleModal()">+ Add Style</button>
     </div>
-    <div class="field" style="max-width:280px; margin-bottom:18px;">
-      <label>Filter by Client</label>
-      <select onchange="window._styleClientFilter=this.value; render();">
-        <option value="">All Styles</option>
-        ${DB.clients.map(c=>`<option value="${c.id}" ${filterClient===c.id?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}
-      </select>
+    <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:18px;">
+      <div class="field" style="flex:1 1 220px; max-width:280px; margin:0;">
+        <label>Filter by Client</label>
+        <select onchange="window._styleClientFilter=this.value; render();">
+          <option value="">All Styles</option>
+          ${DB.clients.map(c=>`<option value="${c.id}" ${filterClient===c.id?'selected':''}>${escapeHTML(c.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="flex:1 1 220px; max-width:280px; margin:0;">
+        <label for="patternSearch">Search by Pattern Code</label>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="patternSearch" list="patternCodeList" value="${escapeHTML(pq)}" placeholder="e.g. PT-102" autocomplete="off" oninput="filterStylesByPattern(this.value)" style="flex:1;">
+          <button type="button" id="patternClearBtn" class="btn btn-ghost btn-sm" title="Clear pattern filter" style="display:${pq?'inline-flex':'none'};" onclick="document.getElementById('patternSearch').value=''; filterStylesByPattern('');">✕</button>
+        </div>
+        <datalist id="patternCodeList">${patternCodes.map(c=>`<option value="${escapeHTML(c)}">`).join('')}</datalist>
+      </div>
+      <div id="stylesCount" style="font-size:12px; color:var(--slate); padding-bottom:10px;">${items.length} of ${DB.styles.length} styles</div>
     </div>
-    ${items.length? `<div class="grid">${items.map(renderStyleCard).join('')}</div>` :
-      `<div class="empty-state"><div class="big">✦</div>No styles found.</div>`}
+    <div id="stylesGridWrap">${renderStylesGridHTML(items)}</div>
   `;
 }
 function renderStyleCard(s){
@@ -1936,6 +1970,7 @@ function renderStyleCard(s){
       <div class="card-body">
         <div class="card-title">${escapeHTML(s.name)}</div>
         ${s.sku?`<div style="font-size:11px;color:var(--slate);margin-bottom:5px">SKU: ${escapeHTML(s.sku)}</div>`:''}
+        ${s.patternCode?`<div style="font-size:11px;color:var(--slate);margin-bottom:5px">Pattern Code: <b style="color:var(--charcoal)">${escapeHTML(s.patternCode)}</b></div>`:''}
         <div class="card-desc">${escapeHTML(s.description||'')}</div>
         <div class="tag-row">
           ${s.clientId? `<span class="tag" style="background:rgba(228,167,59,0.18); color:var(--gold-dark);">👤 ${escapeHTML((DB.clients.find(c=>c.id===s.clientId)||{}).name || 'Unknown client')}</span>`:`<span class="tag">General Catalog</span>`}
@@ -2101,6 +2136,7 @@ function viewStyleModal(id){
     <div class="tag-row">
       ${client? `<span class="tag" style="background:rgba(228,167,59,0.18); color:var(--gold-dark);">👤 ${escapeHTML(client.name)}</span>`:`<span class="tag">General Catalog</span>`}
       ${s.sku?`<span class="tag">SKU: ${escapeHTML(s.sku)}</span>`:''}
+      ${s.patternCode?`<span class="tag">Pattern: ${escapeHTML(s.patternCode)}</span>`:''}
       ${s.size? `<span class="tag">Size: ${escapeHTML(s.size)}</span>`:''}
       ${s.fabric? `<span class="tag">${escapeHTML(s.fabric)}</span>`:''}
       ${s.hsnCode? `<span class="tag">HSN/SAC: ${escapeHTML(s.hsnCode)}</span>`:''}
@@ -2133,7 +2169,10 @@ function openStyleModal(id){
     </div>
     <div class="field-row">
       <div class="field"><label>SKU</label><input type="text" id="f_sku" value="${escapeHTML(s.sku||'')}" placeholder="e.g. CV-4"></div>
-      <div class="field"><label>Google Drive Media Folder</label><input type="url" id="f_drive" value="${escapeHTML(s.mediaDriveUrl||'')}" placeholder="https://drive.google.com/..."></div>
+      <div class="field"><label>Pattern Code</label><input type="text" id="f_pattern" value="${escapeHTML(s.patternCode||'')}" placeholder="e.g. PT-102"></div>
+    </div>
+    <div class="field">
+      <label>Google Drive Media Folder</label><input type="url" id="f_drive" value="${escapeHTML(s.mediaDriveUrl||'')}" placeholder="https://drive.google.com/...">
     </div>
     <div class="field">
       <label>Client (optional — leave blank for general catalog)</label>
@@ -2337,6 +2376,7 @@ function fetchImageFromURL(){
 function saveStyle(id){
   const name = document.getElementById('f_name').value.trim();
   const sku = document.getElementById('f_sku').value.trim();
+  const patternCode = (document.getElementById('f_pattern')?.value || '').trim();
   const mediaDriveUrl = document.getElementById('f_drive').value.trim();
   const clientId = document.getElementById('f_client').value;
   const desc = document.getElementById('f_desc').value.trim();
@@ -2390,7 +2430,7 @@ function saveStyle(id){
   const image2 = previewEl2 && previewEl2.style.display!=='none' ? previewEl2.src : '';
   const existing = id ? DB.styles.find(x=>x.id===id) : null;
   if(!name){ alert('Enter a style name.'); return; }
-  const data = { name, sku, mediaDriveUrl, description:desc, cost, costUSD, packingCost, packingCostUSD, shippingCost, shippingCostUSD, otherCost, otherCostUSD, size, fabric, hsnCode, clientId, imageUrl, imageUrl2:imageUrl, gallery: window._styleGalleryEdit || [] };
+  const data = { name, sku, patternCode, mediaDriveUrl, description:desc, cost, costUSD, packingCost, packingCostUSD, shippingCost, shippingCostUSD, otherCost, otherCostUSD, size, fabric, hsnCode, clientId, imageUrl, imageUrl2:imageUrl, gallery: window._styleGalleryEdit || [] };
   if(image1) data.image = image1;
   if(image2) data.image2 = image2;
   data.thumbnail = image1 || (existing && (existing.thumbnail||existing.image)) || '';
@@ -4962,7 +5002,7 @@ function performSearch(query){
   
   // Search styles
   DB.styles.forEach(s=>{
-    if(s.name.toLowerCase().includes(q) || (s.description||'').toLowerCase().includes(q) || (s.size||'').toLowerCase().includes(q)){
+    if(s.name.toLowerCase().includes(q) || (s.description||'').toLowerCase().includes(q) || (s.size||'').toLowerCase().includes(q) || (s.sku||'').toLowerCase().includes(q) || (s.patternCode||'').toLowerCase().includes(q)){
       results.push({ type:'style', id:s.id, name:s.name, desc:s.description, item:s });
     }
   });
